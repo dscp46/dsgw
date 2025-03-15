@@ -14,7 +14,7 @@ Our main goals
 
 ```mermaid
 flowchart LR
-    wl2k[/Winlink/] <-->|kiss| tnc@{ shape: stadium, label: "DTTNC"}
+    wl2k[/Winlink/PAT/] <-->|kiss| tnc@{ shape: stadium, label: "DTTNC"}
     rat[/D-RATS/] <-->|kiss| tnc
     tnc <-->|CI-V| radio[Radio]
     radio <-..->|D-Star| rptr[Repeater]
