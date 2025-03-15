@@ -8,3 +8,4 @@ A D-Star Service Gateway is used to connect Packet Applications to a wider netwo
 Our main goals
   * Make WL2K work over D-Star DV data
   * DXCluster?
+  * Dedicated channel for D-Rats Ratflector (one for local reflection, another for bridging to a network Ratflector)
