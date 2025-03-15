@@ -16,7 +16,7 @@ Our main goals
 flowchart LR
     wl2k[/Winlink/PAT/] <-->|kiss| tnc@{ shape: stadium, label: "DTTNC"}
     rat[/D-RATS/] <-->|kiss| tnc
-    tnc <-->|CI-V| radio[Radio]
+    tnc <-->|Serial| radio[Radio]
     radio <-..->|D-Star| rptr[Repeater]
     rptr <-->|DExtra| dsgw@{ shape: stadium, label: "S-GW"}
     dsgw <-->|RMS2CMS OpenB2F| cms[/Winlink CMS/]
