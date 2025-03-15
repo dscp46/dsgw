@@ -17,7 +17,7 @@ flowchart LR
     wl2k[/Winlink/] <-->|kiss| tnc@{ shape: stadium, label: "DTTNC"}
     rat[/D-RATS/] <-->|kiss| tnc
     tnc <-->|CI-V| radio[Radio]
-    radio <-..-> rptr[Repeater]
+    radio <-..->|D-Star| rptr[Repeater]
     rptr <-->|DExtra| dsgw@{ shape: stadium, label: "S-GW"}
     dsgw <-->|RMS2CMS OpenB2F| cms[/Winlink CMS/]
     dsgw <-->|telnet| dxc[/DXCluster/]
