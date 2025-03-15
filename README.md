@@ -21,6 +21,7 @@ flowchart LR
     radio <-..->|D-Star| rptr[Repeater]
     rptr <-->|DExtra| dsgw@{ shape: stadium, label: "S-GW"}
     dsgw <-->|RMS2CMS OpenB2F| cms[/Winlink CMS/]
+    dsgw <-->|telnet| wlpo[/Hamnet Winlink Post Office/]
     dsgw <-->|telnet| dxc[/DXCluster/]
     dsgw <--> |telnet| rfl[/Ext. Ratflector/]
     dsgw --> |Builtin Ratflector| dsgw
