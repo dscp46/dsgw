@@ -17,11 +17,13 @@ Our main goals
 flowchart LR
     wl2k[/Winlink/PAT/] <-->|kiss| tnc@{ shape: stadium, label: "DTTNC"}
     rat[/D-RATS/] <-->|kiss| tnc
+    term[/Terminal/] <-->|kiss| tnc
     tnc <-->|Serial| radio[Radio]
     radio <-..->|D-Star| rptr[Repeater]
     rptr <-->|DExtra| dsgw@{ shape: stadium, label: "S-GW"}
     dsgw <-->|RMS2CMS OpenB2F| cms[/Winlink CMS/]
     dsgw <-->|telnet| wlpo[/Hamnet Winlink Post Office/]
+    dsgw <-->|telnet| bbs[/BBS/]
     dsgw <-->|telnet| dxc[/DXCluster/]
     dsgw <--> |telnet| rfl[/Ext. Ratflector/]
     dsgw --> |Builtin Ratflector| dsgw
