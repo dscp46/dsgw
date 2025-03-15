@@ -19,6 +19,7 @@ flowchart LR
     wl2k[/Winlink/PAT/] <-->|kiss| tnc@{ shape: stadium, label: "DTTNC"}
     rat[/D-RATS/] <-->|kiss| tnc
     term[/Terminal/] <-->|kiss| tnc
+    apc[/APRS Client/] <-->|kiss| tnc
     tnc <-->|Serial| radio[Radio]
     radio <-..->|D-Star| rptr[Repeater]
     rptr <-->|DExtra| dsgw@{ shape: stadium, label: "S-GW"}
