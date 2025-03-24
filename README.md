@@ -5,7 +5,7 @@
 
 A D-Star Service Gateway is used to connect Packet Applications to a wider network.
 
-It communicates with a remote [D-Star DV TNC](https://github.com/dscp46/dttnc/) to assist other applications to get connected to services reachable on IP networks (Hamnet/Internet).
+It communicates with a remote [D-Star DV TNC](https://github.com/dscp46/dvtnc/) to assist other applications to get connected to services reachable on IP networks (Hamnet/Internet).
 
 Our main goals
   * Make WL2K work over D-Star DV data
