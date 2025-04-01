@@ -16,7 +16,7 @@ Our main goals
 
 ```mermaid
 flowchart LR
-    wl2k[/Winlink/PAT/] <-->|kiss| tnc@{ shape: stadium, label: "DTTNC"}
+    wl2k[/Winlink/PAT/] <-->|kiss| tnc@{ shape: stadium, label: "DVTNC"}
     rat[/D-RATS/] <-->|agw| tnc
     term[/Terminal/] <-->|kiss| tnc
     apc[/APRS Client/] <-->|kiss| tnc
