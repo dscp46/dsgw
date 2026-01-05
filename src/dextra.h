@@ -29,6 +29,7 @@ typedef struct dextra_peer {
 	int child_fd;
 	int last_rx;
 	int ka_ttl;
+	char bound_module;
 	UT_hash_handle hh;
 } dextra_peer_t;
 

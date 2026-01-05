@@ -147,8 +147,8 @@ void* dextra_server( void* argv)
 		{
 		case DEXTRA_KEEPALIVE_SZ:
 			// Keepalive packet
-			if( peer != NULL )
-				peer->last_rx = 0;
+			if( peer == NULL ) break;
+			peer->last_rx = 0;
 
 			break;
 
@@ -156,14 +156,12 @@ void* dextra_server( void* argv)
 			if( buffer[9] == ' ' || buffer[9] == 'Q' )
 			{
 				// Unbind request
-				if( peer != NULL )
-				{
-					// TODO: Delete associated SIDs?
-					
-					// Delete peer
-					HASH_DELETE( hh, args->peers, peer);
-					dextra_peer_destroy( peer);
-				}
+				if( peer == NULL ) break;
+				// TODO: Delete associated SIDs?
+				
+				// Delete peer
+				HASH_DELETE( hh, args->peers, peer);
+				dextra_peer_destroy( peer);
 			}
 			else
 			{
@@ -180,6 +178,7 @@ void* dextra_server( void* argv)
 						break;
 					}
 
+					peer->bound_module = buffer[9];
 					HASH_ADD( hh, args->peers, key, sizeof( peer_key_t), peer);
 				}
 
@@ -192,15 +191,18 @@ void* dextra_server( void* argv)
 
 		case DEXTRA_BIND_ANS_SZ:
 			// Bind answer
+			// Not implemented, since we don't support DExtra Adjuncts.
 			break;
 
 		case DEXTRA_STREAM_HDR_SZ:
 			if( peer == NULL ) break;
+			if( memcmp( buffer, "DSVT", 4) != 0 ) break; // Drop packets that don't match signature
 			peer->last_rx = 0;
 			break;
 
 		case DEXTRA_STREAM_PKT_SZ:
 			if( peer == NULL ) break;
+			if( memcmp( buffer, "DSVT", 4) != 0 ) break; // Drop packets that don't match signature
 			peer->last_rx = 0;
 			break;
 
