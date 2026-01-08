@@ -34,4 +34,4 @@ uninstall:
 
 clean:
 	rm -rf $(BIN_DIR)
-
+	rm -rf debian/dsgw* debian/debhelper-build-stamp debian/.debhelper

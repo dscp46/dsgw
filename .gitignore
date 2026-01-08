@@ -1,3 +1,5 @@
 *.o
 bin
+debian/.debhelper/*
 debian/dsgw*
+debian/debhelper-build-stamp

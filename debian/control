@@ -1,0 +1,15 @@
+Source: dsgw
+Section: hamradio
+Priority: optional
+Maintainer: Celestine Gramaize F4HOF <celestine+dev@gramaize.eu>
+Build-Depends: debhelper-compat (= 13), gcc, make, uthash-dev
+Standards-Version: 4.6.2
+Rules-Requires-Root: no
+
+Package: dsgw
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: D-Star Service Gateway
+ A bridge between a DExtra-capable repeater and an AX.25 packet switch.
+ .
+ A bridge between a DExtra-capable repeater and an AX.25 packet switch.
