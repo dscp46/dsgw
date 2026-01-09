@@ -7,7 +7,7 @@ BIN_DIR := bin
 PREFIX  ?= /usr
 BINDIR  := $(PREFIX)/bin
 
-SRCS := main.c config.c dextra.c dextra_peer.c kiss.c
+SRCS := main.c config.c crc_ccitt.c dextra.c dextra_peer.c dv_frame.c kiss.c
 OBJS := $(SRCS:%.c=$(BIN_DIR)/%.o)
 
 TARGET := $(BIN_DIR)/dsgwd

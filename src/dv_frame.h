@@ -2,6 +2,7 @@
 #define __DV_FRAME_H
 
 #include <assert.h>
+#include <stddef.h>
 #include <stdint.h>
 
 // AMBE data: 21 * 9 bytes
@@ -32,23 +33,30 @@ typedef struct __attribute__((packed)) dv_trunk_hdr {
 	uint8_t mgmt_info;
 } dv_trunk_hdr_t;
 
+typedef struct __attribute__((packed)) dv_radio_hdr {
+	uint8_t flag1; // フラグ１
+	uint8_t flag2; // フラグ２
+	uint8_t flag3; // フラグ３
+	char rpt1[8];
+	char rpt2[8];
+	char ur[8];   // UR callsign
+	char my[12];  // MY callsign, with 4 byte identifier
+	uint16_t p_fcs;
+} dv_radio_hdr_t;
+
 typedef struct __attribute__((packed)) dv_stream_conf_hdr {
 	// WARNING: strings are not null-terminated.
 	char signature[4];
 	uint16_t flag;
 	uint16_t rsvd;
 	dv_trunk_hdr_t trunk_hdr;
-	char flag1[3];
-	char flag2[3];
-	char flag3[3];
-	char rpt1[8];
-	char rpt2[8];
-	char   ur[8];
-	char   my[12];
-	uint16_t checksum;
+	dv_radio_hdr_t radio_hdr;
 } dv_stream_conf_hdr_t;
 
-_Static_assert( sizeof( dv_trunk_hdr_t) == 7, "struct dv_trunk_hdr_t isn't properly packed!" );
+_Static_assert( sizeof( dv_radio_hdr_t)       == 41, "struct dv_radio_hdr_t isn't properly packed!" );
+_Static_assert( sizeof( dv_trunk_hdr_t)       ==  7, "struct dv_trunk_hdr_t isn't properly packed!" );
 _Static_assert( sizeof( dv_stream_conf_hdr_t) == 56, "struct dv_stream_conf_hdr_t isn't properly packed!");
+
+int dv_radio_valid_csum ( dv_radio_hdr_t *hdr);
 
 #endif	// __DV_FRAME_H
