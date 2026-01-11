@@ -216,7 +216,7 @@ void* dextra_server( void* argv)
 		case DEXTRA_STREAM_PKT_SZ:
 			if( peer == NULL ) break;
 			stream_pkt = (dv_stream_pkt_t*) buffer;
-			trunk_hdr = (dv_trunk_hdr_t*) stream_hdr->trunk_hdr;
+			trunk_hdr = (dv_trunk_hdr_t*) stream_pkt->trunk_hdr;
 
 			// Sanity checks
 			if( memcmp( stream_pkt->signature, "DSVT", 4) != 0 ) break; // Signature mismatch
