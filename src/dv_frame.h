@@ -14,6 +14,9 @@
 // 10 S-Frames of up to 5 bytes
 #define	DSVT_SD_SZ	50
 
+// Header size
+#define DV_TRUNK_HDR_SZ	 7
+#define DV_RADIO_HDR_SZ	41
 
 typedef struct dv_frame_s {
 	uint16_t        stream_id;
@@ -49,14 +52,14 @@ typedef struct __attribute__((packed)) dv_stream_conf_hdr {
 	char signature[4];
 	uint16_t flag;
 	uint16_t rsvd;
-	dv_trunk_hdr_t trunk_hdr;
-	dv_radio_hdr_t radio_hdr;
+	char trunk_hdr[DV_TRUNK_HDR_SZ];
+	char radio_hdr[DV_RADIO_HDR_SZ];
 } dv_stream_conf_hdr_t;
 
-_Static_assert( sizeof( dv_radio_hdr_t)       == 41, "struct dv_radio_hdr_t isn't properly packed!" );
-_Static_assert( sizeof( dv_trunk_hdr_t)       ==  7, "struct dv_trunk_hdr_t isn't properly packed!" );
+_Static_assert( sizeof( dv_radio_hdr_t)       == DV_RADIO_HDR_SZ, "struct dv_radio_hdr_t isn't properly packed!" );
+_Static_assert( sizeof( dv_trunk_hdr_t)       == DV_TRUNK_HDR_SZ, "struct dv_trunk_hdr_t isn't properly packed!" );
 _Static_assert( sizeof( dv_stream_conf_hdr_t) == 56, "struct dv_stream_conf_hdr_t isn't properly packed!");
 
-int dv_radio_valid_csum ( dv_radio_hdr_t *hdr);
+int dv_radio_invalid_csum ( dv_radio_hdr_t *hdr);
 
 #endif	// __DV_FRAME_H
