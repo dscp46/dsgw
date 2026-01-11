@@ -252,7 +252,7 @@ void* dextra_keepalive_thread( void* argv)
 			if( --(cur_peer->ka_ttl) < 0 )
 			{
 				// Send keepalive
-				cur_peer->ka_ttl = DEXTRA_KA_INTVL;
+				cur_peer->ka_ttl = DEXTRA_KA_INTVL-1;
 				sendto( 
 					args->sock_fd, 
 					args->xrf_name, 
