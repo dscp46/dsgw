@@ -14,8 +14,8 @@
 #define DEXTRA_STREAM_HDR_SZ	56
 #define DEXTRA_MAX_PKT_SZ	DEXTRA_STREAM_HDR_SZ+1
 
-#define DEXTRA_KA_INTVL		3
-#define DEXTRA_DEAD_INTVL	10
+#define DEXTRA_KA_INTVL		10
+#define DEXTRA_DEAD_INTVL	35
 
 typedef struct peer_key {
     struct in6_addr ip;
@@ -34,7 +34,7 @@ typedef struct dextra_peer {
 } dextra_peer_t;
 
 typedef struct dextra_server_args {
-	char *addr;
+	const char *addr;
 	int shutdown;
 	int sock_fd;
 	size_t msg_errors;

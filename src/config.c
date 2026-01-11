@@ -41,9 +41,11 @@ void print_usage( char *argv[])
 int parse_cmdline_args( int argc, char *argv[], appconf_t *cfg)
 {
 	static const char      dfl_xrf_name[] = "XRFSGW  ";
+	static const char     dfl_bind_addr[] = "::1";
 	static const char     dfl_kiss_addr[] = "::ffff:127.0.0.1";
 	static const char dfl_kiss_sockname[] = "/run/vpsed/vpsed.sock";
 	int c;
+	char *bind_addr = NULL;
 	char *kiss_addr = NULL;
 	char *kiss_port = NULL;
 	char *xrf_name = NULL;
@@ -64,7 +66,7 @@ int parse_cmdline_args( int argc, char *argv[], appconf_t *cfg)
 			break;
 
 		case 'l':
-			cfg->bind_addr = optarg;
+			bind_addr = optarg;
 			break;
 
 		case 'n':
@@ -85,18 +87,22 @@ int parse_cmdline_args( int argc, char *argv[], appconf_t *cfg)
 			return -1;
 
 		default:
-			print_usage( argv);
+			fprintf( stderr, "Invalid argument name.\n");
 			return -1;
 		}
 	}
 
-	cfg->xrf_name = NULL_COALESCE( xrf_name, dfl_xrf_name);
+	cfg->xrf_name  = NULL_COALESCE(  xrf_name, dfl_xrf_name);
+	cfg->bind_addr = NULL_COALESCE( bind_addr, dfl_bind_addr);
 
-	if( kiss_port == NULL || !str_to_uint16( kiss_port, &cfg->kiss_port) )
+	if( kiss_port != NULL && !str_to_uint16( kiss_port, &cfg->kiss_port) )
 	{
 		fprintf( stderr, "Invalid port number.\n");
 		return 3;
 	}
+	else
+		cfg->kiss_port = 8100;
+
 	if( cfg->kiss_port == 0 )
 		cfg->kiss_addr = NULL_COALESCE( kiss_addr, dfl_kiss_sockname);
 	else

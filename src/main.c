@@ -14,17 +14,19 @@ int main( int argc, char *argv[], char *envp[])
 {
 	int ret;
 	appconf_t cfg;
-	if(!(ret = parse_cmdline_args( argc, argv, &cfg)))
+	if((ret = parse_cmdline_args( argc, argv, &cfg)))
 		return ret;
 
 	setup_signal( SIGINT, sig_handler); 
+
+	printf( "XRF server name: '%s'\n", cfg.xrf_name);
 
 	dextra_server_args_t server_args;
 	dextra_server_args_init( &server_args);
 	srv_args = &server_args;
 
-	if ( argc > 1 )
-		server_args.addr = argv[1];
+	server_args.addr = cfg.bind_addr;
+	memcpy( server_args.xrf_name, cfg.xrf_name, sizeof server_args.xrf_name);
 
 	dextra_server( &server_args);
 
