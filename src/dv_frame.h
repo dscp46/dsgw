@@ -71,8 +71,8 @@ typedef struct __attribute__((packed)) dv_stream_pkt {
 
 _Static_assert( sizeof( dv_radio_hdr_t)  == DV_RADIO_HDR_SZ,  "struct dv_radio_hdr_t isn't properly packed!" );
 _Static_assert( sizeof( dv_trunk_hdr_t)  == DV_TRUNK_HDR_SZ,  "struct dv_trunk_hdr_t isn't properly packed!" );
-_Static_assert( sizeof( dv_stream_hdr_t) == DV_STREAM_HDR_SZ, "struct dv_stream_conf_hdr_t isn't properly packed!");
-_Static_assert( sizeof( dv_stream_pkt_t) == DV_STREAM_PKT_SZ, "struct dv_stream_conf_pkt_t isn't properly packed!");
+_Static_assert( sizeof( dv_stream_hdr_t) == DV_STREAM_HDR_SZ, "struct dv_stream_hdr_t isn't properly packed!");
+_Static_assert( sizeof( dv_stream_pkt_t) == DV_STREAM_PKT_SZ, "struct dv_stream_pkt_t isn't properly packed!");
 
 int dv_radio_invalid_csum ( dv_radio_hdr_t *hdr);
 int dv_last_frame( dv_trunk_hdr_t *hdr);
