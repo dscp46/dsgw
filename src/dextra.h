@@ -5,13 +5,15 @@
 #include <uthash.h>
 #include <arpa/inet.h>
 
+#include "dv_frame.h"
+
 #define DEXTRA_PORT		30001
 
 #define DEXTRA_KEEPALIVE_SZ	9
 #define DEXTRA_BIND_REQ_SZ	11
 #define DEXTRA_BIND_ANS_SZ	14
-#define DEXTRA_STREAM_PKT_SZ	27
-#define DEXTRA_STREAM_HDR_SZ	56
+#define DEXTRA_STREAM_PKT_SZ	DV_STREAM_PKT_SZ
+#define DEXTRA_STREAM_HDR_SZ	DV_STREAM_HDR_SZ
 #define DEXTRA_MAX_PKT_SZ	DEXTRA_STREAM_HDR_SZ+1
 
 #define DEXTRA_KA_INTVL		10
@@ -30,6 +32,7 @@ typedef struct dextra_peer {
 	int last_rx;
 	int ka_ttl;
 	char bound_module;
+	int rx_idle;
 	UT_hash_handle hh;
 } dextra_peer_t;
 

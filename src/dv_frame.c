@@ -15,3 +15,8 @@ int dv_radio_invalid_csum ( dv_radio_hdr_t *hdr)
 	printf( "Expected: %04x, Actual: %04x\n", read_csum, computed_csum);
 	return ( read_csum != computed_csum );
 }
+
+int dv_last_frame( dv_trunk_hdr_t *hdr)
+{
+	return ( hdr->mgmt_info & 0xC0) == 0x40 ;
+}

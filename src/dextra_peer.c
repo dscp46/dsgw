@@ -34,6 +34,7 @@ dextra_peer_t* dextra_peer_init( peer_key_t *lookup_key, struct sockaddr_in6 *cl
 	peer->ka_ttl  = DEXTRA_KA_INTVL-1; 
 	peer->last_rx = 0; 
 	peer->rpt1[9] = '\0';
+	peer->rx_idle = 1;
 
 	return peer;
 }

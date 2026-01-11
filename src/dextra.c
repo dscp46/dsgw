@@ -94,6 +94,11 @@ void* dextra_server( void* argv)
 	dextra_peer_t *peer = NULL;
 	peer_key_t lookup_key;
 
+	dv_stream_hdr_t *stream_hdr = NULL;
+	dv_stream_pkt_t *stream_pkt = NULL;
+	dv_radio_hdr_t *radio_hdr = NULL;
+	dv_trunk_hdr_t *trunk_hdr = NULL;
+
 	if( argv == NULL )
 		return NULL;
 
@@ -196,14 +201,29 @@ void* dextra_server( void* argv)
 
 		case DEXTRA_STREAM_HDR_SZ:
 			if( peer == NULL ) break;
-			if( memcmp( buffer, "DSVT", 4) != 0 ) break; // Drop packets that don't match signature
+			stream_hdr = (dv_stream_hdr_t*) buffer;
+			trunk_hdr = (dv_trunk_hdr_t*) stream_hdr->trunk_hdr;
+			radio_hdr = (dv_radio_hdr_t*) stream_hdr->radio_hdr;
+
+			// Sanity checks
+			if( memcmp( stream_hdr->signature, "DSVT", 4) != 0 ) break; // Signature mismatch
+			if( dv_radio_invalid_csum( radio_hdr) && radio_hdr->p_fcs != 0x0000 ) break; // Bad checksum
+			
 			peer->last_rx = 0;
+			peer->rx_idle = 0;
 			break;
 
 		case DEXTRA_STREAM_PKT_SZ:
 			if( peer == NULL ) break;
-			if( memcmp( buffer, "DSVT", 4) != 0 ) break; // Drop packets that don't match signature
+			stream_pkt = (dv_stream_pkt_t*) buffer;
+			trunk_hdr = (dv_trunk_hdr_t*) stream_hdr->trunk_hdr;
+
+			// Sanity checks
+			if( memcmp( stream_pkt->signature, "DSVT", 4) != 0 ) break; // Signature mismatch
+
 			peer->last_rx = 0;
+			if( dv_last_frame( trunk_hdr) )
+				peer->rx_idle = 1;
 			break;
 
 		default:
