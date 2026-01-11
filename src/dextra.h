@@ -33,6 +33,7 @@ typedef struct dextra_peer {
 	int ka_ttl;
 	char bound_module;
 	int rx_idle;
+	dv_frame_t rx_frame;
 	UT_hash_handle hh;
 } dextra_peer_t;
 

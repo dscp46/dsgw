@@ -99,6 +99,8 @@ void* dextra_server( void* argv)
 	dv_radio_hdr_t *radio_hdr = NULL;
 	dv_trunk_hdr_t *trunk_hdr = NULL;
 
+	uint16_t sid;
+
 	if( argv == NULL )
 		return NULL;
 
@@ -204,6 +206,7 @@ void* dextra_server( void* argv)
 			stream_hdr = (dv_stream_hdr_t*) buffer;
 			trunk_hdr = (dv_trunk_hdr_t*) stream_hdr->trunk_hdr;
 			radio_hdr = (dv_radio_hdr_t*) stream_hdr->radio_hdr;
+			sid = ntohs( trunk_hdr->call_id);
 
 			// Sanity checks
 			if( memcmp( stream_hdr->signature, "DSVT", 4) != 0 ) break; // Signature mismatch
@@ -211,19 +214,20 @@ void* dextra_server( void* argv)
 			
 			peer->last_rx = 0;
 			peer->rx_idle = 0;
+			peer->rx_frame.stream_id = sid;
 			break;
 
 		case DEXTRA_STREAM_PKT_SZ:
 			if( peer == NULL ) break;
 			stream_pkt = (dv_stream_pkt_t*) buffer;
-			trunk_hdr = (dv_trunk_hdr_t*) stream_pkt->trunk_hdr;
 
 			// Sanity checks
 			if( memcmp( stream_pkt->signature, "DSVT", 4) != 0 ) break; // Signature mismatch
 
+			if( dextra_peer_parse_pkt( peer, stream_pkt) ) 
+				break;
+
 			peer->last_rx = 0;
-			if( dv_last_frame( trunk_hdr) )
-				peer->rx_idle = 1;
 			break;
 
 		default:

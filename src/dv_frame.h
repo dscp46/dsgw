@@ -22,13 +22,13 @@
 #define DV_AUDIO_FRM_SZ		 9
 #define DV_DATA_FRM_SZ		 3
 
-typedef struct dv_frame_s {
+typedef struct dv_frame {
 	uint16_t        stream_id;
 	unsigned char   ambe_data[ DSVT_AMBE_SZ];
 	unsigned char     message[ DSVT_MSG_SZ];
 	unsigned char simple_data[ DSVT_SD_SZ];
 	size_t  simple_data_bytes;
-} dv_frame;
+} dv_frame_t;
 
 typedef struct __attribute__((packed)) dv_trunk_hdr {
 	uint8_t type : 2;
@@ -76,5 +76,6 @@ _Static_assert( sizeof( dv_stream_pkt_t) == DV_STREAM_PKT_SZ, "struct dv_stream_
 
 int dv_radio_invalid_csum ( dv_radio_hdr_t *hdr);
 int dv_last_frame( dv_trunk_hdr_t *hdr);
+void dv_scramble_data( void *buffer, size_t len);
 
 #endif	// __DV_FRAME_H

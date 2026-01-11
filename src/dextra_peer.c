@@ -48,3 +48,19 @@ void dextra_peer_destroy( dextra_peer_t* peer)
 	free( peer);
 }
 
+int dextra_peer_parse_pkt( dextra_peer_t *peer, dv_stream_pkt_t *pkt)
+{
+	if( peer == NULL || pkt == NULL ) return EINVAL;
+	dv_trunk_hdr_t *trunk_hdr = (dv_trunk_hdr_t*) pkt->trunk_hdr;
+	uint16_t sid = ntohs( trunk_hdr->call_id);
+
+	if( peer->rx_frame.stream_id != sid) return EPROTO; // SID mismatch
+
+	if( dv_last_frame( trunk_hdr) )
+	{
+		peer->rx_idle = 1;
+		// TODO: Parse and send packet.
+	}
+
+	return 0;
+}
