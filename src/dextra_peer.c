@@ -31,7 +31,7 @@ dextra_peer_t* dextra_peer_init( peer_key_t *lookup_key, struct sockaddr_in6 *cl
 	memcpy( &peer->key,  lookup_key, sizeof( peer_key_t));
 	memcpy( &peer->addr, client_addr, sizeof( struct sockaddr_in6));
 	memcpy( peer->rpt1, buffer, 8);
-	peer->ka_ttl  = DEXTRA_KA_INTVL; 
+	peer->ka_ttl  = DEXTRA_KA_INTVL-1; 
 	peer->last_rx = 0; 
 	peer->rpt1[9] = '\0';
 
