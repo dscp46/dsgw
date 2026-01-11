@@ -90,6 +90,7 @@ void* dextra_server( void* argv)
 	socklen_t           client_len = sizeof( client_addr);
 
 	const char ack[] = "ACK";
+	const char nak[] = "NAK";
 
 	dextra_peer_t *peer = NULL;
 	peer_key_t lookup_key;
@@ -182,6 +183,9 @@ void* dextra_server( void* argv)
 					if( peer == NULL )
 					{
 						fprintf( stderr, "%s: unable to allocate a peer.\n", __FUNCTION__);
+						// Send bind NAK.
+						memcpy( buffer+10, nak, 4);
+						sendto( args->sock_fd, buffer, DEXTRA_BIND_ANS_SZ, 0, (struct sockaddr *)&client_addr, client_len);
 						break;
 					}
 
