@@ -53,8 +53,26 @@ int dextra_peer_parse_pkt( dextra_peer_t *peer, dv_stream_pkt_t *pkt)
 	if( peer == NULL || pkt == NULL ) return EINVAL;
 	dv_trunk_hdr_t *trunk_hdr = (dv_trunk_hdr_t*) pkt->trunk_hdr;
 	uint16_t sid = ntohs( trunk_hdr->call_id);
+	uint8_t  seq = trunk_hdr->mgmt_info & 0x1F; // 00h~14h 
 
 	if( peer->rx_frame.stream_id != sid) return EPROTO; // SID mismatch
+
+
+	if( seq == 0x00 )
+	{
+		// Sync 
+	}
+	else if( seq & 0x01 )
+	{
+		// Odd sequence number
+		// Descramble and accumulate
+	}
+	else 
+	{
+		// Even sequence number
+		// Descramble, accumulate, and parse
+	}
+
 
 	if( dv_last_frame( trunk_hdr) )
 	{
