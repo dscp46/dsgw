@@ -18,6 +18,7 @@
 
 #define DEXTRA_KA_INTVL		10
 #define DEXTRA_DEAD_INTVL	35
+#define DEXTRA_INTERFRAME_SPACE	2
 
 typedef struct peer_key {
     struct in6_addr ip;
@@ -28,11 +29,13 @@ typedef struct dextra_peer {
 	peer_key_t key;
 	struct sockaddr_in6 addr;
 	char   rpt1[9];
-	int child_fd;
-	int last_rx;
-	int ka_ttl;
-	char bound_module;
-	int rx_idle;
+	int child_fd;	// KISS socket fd
+	int last_rx;	// Seconds since last frame rx, expires by exceeding threshold
+	int ka_ttl;	// Keep alive timer, expires at 0
+	int ifs_timer;  // Interframe Space, to wait for the repeater sendin ACK 
+			// and for remote radio to turn around.
+	int rx_idle;	// Used to enforce half duplex.
+	char bound_module; 
 	dv_frame_t rx_frame;
 	char dv_data_accumul[3];
 	UT_hash_handle hh;

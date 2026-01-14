@@ -76,9 +76,17 @@ int dextra_peer_parse_pkt( dextra_peer_t *peer, dv_stream_pkt_t *pkt)
 
 	if( dv_last_frame( trunk_hdr) )
 	{
-		peer->rx_idle = 1;
 		// TODO: Parse and send packet.
+
+		// Medim Access Control
+		peer->ifs_timer = DEXTRA_INTERFRAME_SPACE;
+		peer->rx_idle = 1;
 	}
 
 	return 0;
+}
+
+int dextra_can_tx( dextra_peer_t *peer)
+{
+	return peer->rx_idle && peer->ifs_timer == 0;
 }

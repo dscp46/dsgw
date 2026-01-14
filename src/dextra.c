@@ -290,6 +290,10 @@ void* dextra_keepalive_thread( void* argv)
 					sizeof( struct sockaddr_in6)
 				);
 			}
+
+			// Medium Access Control
+			if( cur_peer->ifs_timer )
+				--cur_peer->ifs_timer;
 		}		
 		sleep(1);
 	}
