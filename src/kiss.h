@@ -3,6 +3,8 @@
 
 #include <stdint.h>
 
-int kiss_new_connection( char *addr, uint16_t port);
+#define KISS_DEFAULT_PORT	8100
+
+int kiss_new_connection( const char *addr, uint16_t port);
 
 #endif	/* __KISS_H */

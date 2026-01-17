@@ -44,6 +44,8 @@ typedef struct dextra_peer {
 
 typedef struct dextra_server_args {
 	const char *addr;
+	const char *kiss_addr;
+	uint16_t kiss_port;
 	int shutdown;
 	int sock_fd;
 	size_t msg_errors;

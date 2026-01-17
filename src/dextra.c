@@ -177,7 +177,7 @@ void* dextra_server( void* argv)
 				if( peer == NULL)
 				{
 					// Add peer
-					peer = dextra_peer_init( &lookup_key, &client_addr, buffer);
+					peer = dextra_peer_init( &lookup_key, &client_addr, buffer, args->kiss_addr, args->kiss_port);
 					
 					// Peer initialization failure management
 					if( peer == NULL )

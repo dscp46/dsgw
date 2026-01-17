@@ -26,6 +26,8 @@ int main( int argc, char *argv[], char *envp[])
 	srv_args = &server_args;
 
 	server_args.addr = cfg.bind_addr;
+	server_args.kiss_addr = cfg.kiss_addr;
+	server_args.kiss_port = cfg.kiss_port;
 	memcpy( server_args.xrf_name, cfg.xrf_name, sizeof server_args.xrf_name);
 
 	dextra_server( &server_args);

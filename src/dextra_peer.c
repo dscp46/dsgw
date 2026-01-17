@@ -7,7 +7,7 @@
 #include "dextra_peer.h"
 #include "kiss.h"
 
-dextra_peer_t* dextra_peer_init( peer_key_t *lookup_key, struct sockaddr_in6 *client_addr, unsigned char *buffer)
+dextra_peer_t* dextra_peer_init( peer_key_t *lookup_key, struct sockaddr_in6 *client_addr, unsigned char *buffer, const char *kiss_addr, uint16_t kiss_port)
 {
 	dextra_peer_t *peer = (dextra_peer_t*) malloc( sizeof( dextra_peer_t));
 
@@ -15,7 +15,7 @@ dextra_peer_t* dextra_peer_init( peer_key_t *lookup_key, struct sockaddr_in6 *cl
 		return NULL;
 
 	// Setup connection, abort if unable
-	if((peer->child_fd = kiss_new_connection( "::ffff:127.0.0.1", 8000)) < 1)
+	if((peer->child_fd = kiss_new_connection( kiss_addr, kiss_port)) < 1)
 	{
 		fprintf( 
 			stderr, 

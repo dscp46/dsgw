@@ -7,6 +7,8 @@
 #include <stdlib.h>
 #include <unistd.h>
 
+#include "kiss.h"
+
 #define NULL_COALESCE(x,y) ( ( x != NULL ) ? x : y )
 
 int str_to_uint16(const char *str, uint16_t *out)
@@ -16,13 +18,13 @@ int str_to_uint16(const char *str, uint16_t *out)
 
     unsigned long value = strtoul(str, &endptr, 10);
 
-    if (errno != 0) return -1;
-    if (endptr == str) return -1;
-    if (*endptr != '\0') return -1;
-    if (value > UINT16_MAX) return -1;
+    if (errno != 0) return 0;
+    if (endptr == str) return 0;
+    if (*endptr != '\0') return 0;
+    if (value > UINT16_MAX) return 0;
 
     *out = (uint16_t)value;
-    return 0;
+    return 1;
 }
 
 void print_usage( char *argv[])
@@ -75,6 +77,7 @@ int parse_cmdline_args( int argc, char *argv[], appconf_t *cfg)
 
 		case 'p':
 			kiss_port = optarg;
+			break;
 
 		case '?':
 			if( optopt == 'k' || optopt == 'l' || optopt == 'n' || optopt == 'p' )
@@ -95,13 +98,16 @@ int parse_cmdline_args( int argc, char *argv[], appconf_t *cfg)
 	cfg->xrf_name  = NULL_COALESCE(  xrf_name, dfl_xrf_name);
 	cfg->bind_addr = NULL_COALESCE( bind_addr, dfl_bind_addr);
 
-	if( kiss_port != NULL && !str_to_uint16( kiss_port, &cfg->kiss_port) )
+	if( kiss_port != NULL )
 	{
-		fprintf( stderr, "Invalid port number.\n");
-		return 3;
+		if( !str_to_uint16( kiss_port, &cfg->kiss_port) )
+		{
+			fprintf( stderr, "Invalid port number.\n");
+			return 3;
+		}
 	}
 	else
-		cfg->kiss_port = 8100;
+		cfg->kiss_port = KISS_DEFAULT_PORT;
 
 	if( cfg->kiss_port == 0 )
 		cfg->kiss_addr = NULL_COALESCE( kiss_addr, dfl_kiss_sockname);

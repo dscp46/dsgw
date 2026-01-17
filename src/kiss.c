@@ -12,7 +12,7 @@
 
 // Set up a new KISS connection
 //   When port is set to 0, an AF_UNIX socket is used.
-int kiss_new_connection( char *addr, uint16_t port)
+int kiss_new_connection( const char *addr, uint16_t port)
 {
 	int sock_fd, errnum;
 	struct sockaddr_un  server_addr_un;
