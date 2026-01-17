@@ -38,7 +38,8 @@ typedef struct dextra_peer {
 	char band; 
 	char bound_module; 
 	dv_frame_t rx_frame;
-	char dv_data_accumul[3];
+	char dv_data_accumul[20*DV_DATA_FRM_SZ];
+	uint32_t dv_rx_mask; 
 	UT_hash_handle hh;
 } dextra_peer_t;
 

@@ -6,7 +6,7 @@
 #include <stdint.h>
 
 // AMBE data: 21 * 9 bytes
-#define DSVT_AMBE_SZ	20
+#define DSVT_AMBE_SZ	189
 
 // DV Message Size
 #define DSVT_MSG_SZ	20
@@ -22,10 +22,14 @@
 #define DV_AUDIO_FRM_SZ		 9
 #define DV_DATA_FRM_SZ		 3
 
+// Bit masks
+#define DV_TRUNK_HEALTH_FLAG	0x20
+#define DV_TRUNK_SEQ_MASK	0x1F
+
 typedef struct dv_frame {
 	uint16_t        stream_id;
 	unsigned char   ambe_data[ DSVT_AMBE_SZ];
-	unsigned char     message[ DSVT_MSG_SZ];
+	char            message[ DSVT_MSG_SZ];
 	unsigned char simple_data[ DSVT_SD_SZ];
 	size_t  simple_data_bytes;
 } dv_frame_t;
