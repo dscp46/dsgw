@@ -35,6 +35,7 @@ typedef struct dextra_peer {
 	int ifs_timer;  // Interframe Space, to wait for the repeater sendin ACK 
 			// and for remote radio to turn around.
 	int rx_idle;	// Used to enforce half duplex.
+	char band; 
 	char bound_module; 
 	dv_frame_t rx_frame;
 	char dv_data_accumul[3];

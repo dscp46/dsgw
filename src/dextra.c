@@ -189,6 +189,7 @@ void* dextra_server( void* argv)
 						break;
 					}
 
+					peer->band = buffer[8];
 					peer->bound_module = buffer[9];
 					HASH_ADD( hh, args->peers, key, sizeof( peer_key_t), peer);
 				}
@@ -273,6 +274,7 @@ void* dextra_keepalive_thread( void* argv)
 			{
 				// Dead peer management
 				HASH_DELETE( hh, args->peers, cur_peer);
+				fprintf( stderr, "Peer dead: '%7s%c'.\n", cur_peer->rpt1, cur_peer->band); // TODO: log
 				dextra_peer_destroy( cur_peer);
 				continue;
 			}
