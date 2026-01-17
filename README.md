@@ -16,18 +16,19 @@ Our main goals
 
 ```mermaid
 flowchart LR
-    wl2k[/Winlink/PAT/] <-->|kiss| tnc@{ shape: stadium, label: "DVTNC"}
-    rat[/D-RATS/] <-->|agw| tnc
-    term[/Terminal/] <-->|kiss| tnc
-    apc[/APRS Client/] <-->|kiss| tnc
+    wl2k[/Winlink/PAT/] <-->|kiss| pse_c[PSE]
+    rat[/D-RATS/] <-->|agw| pse_c
+    term[/Terminal/] <-->|kiss| pse_c
+    apc[/APRS Client/] <-->|kiss| pse_c
+    pse_c <-->|kiss| tnc@{ shape: stadium, label: "DVTNC"}
     tnc <-->|Serial| radio[Radio]
     radio <-..->|D-Star| rptr[Repeater]
     rptr <-->|DExtra| dsgw@{ shape: stadium, label: "S-GW"}
-    dsgw <-->|RMS2CMS OpenB2F| cms[/Winlink CMS/]
-    dsgw <-->|telnet| wlpo[/Hamnet Winlink Post Office/]
-    dsgw <-->|telnet| bbs[/BBS/]
-    dsgw <-->|telnet| dxc[/DXCluster/]
-    dsgw <-->|APRS-IS| abk[/APRS Server/]
-    dsgw <--> |telnet| rfl[/Ext. Ratflector/]
-    dsgw --> |Builtin Ratflector| dsgw
+    dsgw <--> |kiss|pse_s[PSE]
+    pse_s <-->|RMS2CMS OpenB2F| cms[/Winlink CMS/]
+    pse_s <-->|telnet| wlpo[/Hamnet Winlink Post Office/]
+    pse_s <-->|telnet| bbs[/BBS/]
+    pse_s <-->|telnet| dxc[/DXCluster/]
+    pse_s <-->|APRS-IS| abk[/APRS Server/]
+    dsgw <--> |ddt2| rfl[/Ext. Ratflector/]
 ```
