@@ -38,6 +38,7 @@ dextra_peer_t* dextra_peer_init( peer_key_t *lookup_key, struct sockaddr_in6 *cl
 	peer->rpt1[9] = '\0';
 	peer->rx_idle = 1;
 	utstring_new( peer->reassembled_data);
+	peer->rx_frame.simple_data_bytes = 0;
 
 	return peer;
 }
@@ -153,7 +154,6 @@ int dextra_peer_parse_pkt( dextra_peer_t *peer, dv_stream_pkt_t *pkt)
 				peer->rx_frame.simple_data_bytes
 			);
 
-			peer->rx_frame.simple_data_bytes = 0;
 		}
 
 		// TODO: Parse and send packet.
@@ -168,6 +168,7 @@ int dextra_peer_parse_pkt( dextra_peer_t *peer, dv_stream_pkt_t *pkt)
 		// Cleanup
 		memset( peer->rx_frame.message, ' ', DSVT_MSG_SZ);
 		utstring_clear( peer->reassembled_data);
+		peer->rx_frame.simple_data_bytes = 0;
 
 		// Medium Access Control
 		peer->ifs_timer = DEXTRA_INTERFRAME_SPACE;
