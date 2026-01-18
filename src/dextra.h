@@ -3,6 +3,7 @@
 
 #include <stddef.h>
 #include <uthash.h>
+#include <utstring.h>
 #include <arpa/inet.h>
 
 #include "dv_frame.h"
@@ -40,6 +41,7 @@ typedef struct dextra_peer {
 	dv_frame_t rx_frame;
 	char dv_data_accumul[20*DV_DATA_FRM_SZ];
 	uint32_t dv_rx_mask; 
+	UT_string *reassembled_data;
 	UT_hash_handle hh;
 } dextra_peer_t;
 

@@ -5,6 +5,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <uthash.h>
+#include <utstring.h>
 
 #include <netdb.h>
 #include <arpa/inet.h>
@@ -220,6 +221,7 @@ void* dextra_server( void* argv)
 			peer->last_rx = 0;
 			peer->rx_idle = 0;
 			peer->rx_frame.stream_id = sid;
+			utstring_clear( peer->reassembled_data);
 			break;
 
 		case DEXTRA_STREAM_PKT_SZ:

@@ -3,6 +3,7 @@
 #include <unistd.h>
 #include <arpa/inet.h>
 #include <sys/socket.h>
+#include <utstring.h>
 
 #include "dextra_peer.h"
 #include "kiss.h"
@@ -36,6 +37,7 @@ dextra_peer_t* dextra_peer_init( peer_key_t *lookup_key, struct sockaddr_in6 *cl
 	peer->ifs_timer = 0; 
 	peer->rpt1[9] = '\0';
 	peer->rx_idle = 1;
+	utstring_new( peer->reassembled_data);
 
 	return peer;
 }
@@ -44,7 +46,8 @@ void dextra_peer_destroy( dextra_peer_t* peer)
 {
 	if( peer == NULL )
 		return;
-
+	
+	utstring_free( peer->reassembled_data);
 	close( peer->child_fd);
 	free( peer);
 }
@@ -127,7 +130,11 @@ int dextra_peer_parse_pkt( dextra_peer_t *peer, dv_stream_pkt_t *pkt)
 			if( s_frame_offset == 9 )
 			{
 				// Last S-Frame of a sequence before rollover
-				// TODO: send peer->rx_frame->simple_data_bytes to the yEnc layer
+				utstring_bincpy(
+					peer->reassembled_data,
+					peer->rx_frame.simple_data,
+					peer->rx_frame.simple_data_bytes
+				);
 			}
 		}
 	}
@@ -137,9 +144,17 @@ int dextra_peer_parse_pkt( dextra_peer_t *peer, dv_stream_pkt_t *pkt)
 	{
 		// TODO: Parse and send packet.
 		printf( "Message via %7s%c: '%20s'\n", peer->rpt1, peer->band, peer->rx_frame.message);
-		memset( peer->rx_frame.message, ' ', DSVT_MSG_SZ);
+		//parse( 
+		//	...,
+		//	utstring_body(peer->reassembled_data)),
+		//	utstring_len(peer->reassembled_data))
+		//);
 
-		// Medim Access Control
+		// Cleanup
+		memset( peer->rx_frame.message, ' ', DSVT_MSG_SZ);
+		utstring_clear( peer->reassembled_data);
+
+		// Medium Access Control
 		peer->ifs_timer = DEXTRA_INTERFRAME_SPACE;
 		peer->rx_idle = 1;
 	}
