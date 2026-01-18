@@ -222,6 +222,7 @@ void* dextra_server( void* argv)
 			peer->rx_idle = 0;
 			peer->rx_frame.stream_id = sid;
 			utstring_clear( peer->reassembled_data);
+			peer->rx_frame.simple_data_bytes = 0;
 			break;
 
 		case DEXTRA_STREAM_PKT_SZ:
