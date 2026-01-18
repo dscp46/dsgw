@@ -39,8 +39,11 @@ typedef struct dextra_peer {
 	char band; 
 	char bound_module; 
 	dv_frame_t rx_frame;
+
 	char dv_data_accumul[20*DV_DATA_FRM_SZ];
-	uint32_t dv_rx_mask; 
+	uint32_t dv_rx_mask;
+
+	uint16_t feat_flags;	// List remote node capabilities
 	UT_string *reassembled_data;
 	UT_hash_handle hh;
 } dextra_peer_t;

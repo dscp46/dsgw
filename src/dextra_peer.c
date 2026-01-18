@@ -39,6 +39,7 @@ dextra_peer_t* dextra_peer_init( peer_key_t *lookup_key, struct sockaddr_in6 *cl
 	peer->rx_idle = 1;
 	utstring_new( peer->reassembled_data);
 	peer->rx_frame.simple_data_bytes = 0;
+	peer->feat_flags = 0;
 
 	return peer;
 }
@@ -136,6 +137,7 @@ int dextra_peer_parse_pkt( dextra_peer_t *peer, dv_stream_pkt_t *pkt)
 				if( s_frame_offset == 0 && fastdata_block_sz > 28 ) break;
 				if( s_frame_offset != 0 && fastdata_block_sz > 20 ) break;
 
+				peer->feat_flags |= DEXTRA_FEAT_FAST_DATA;
 				// TODO: Copy data, needs a flush of slow data...
 				// memcpy ( , s_frame+1, 2);
 				// memcpy ( , s_frame+4, 2);
