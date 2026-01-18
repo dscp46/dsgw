@@ -76,6 +76,12 @@ int dextra_peer_parse_pkt( dextra_peer_t *peer, dv_stream_pkt_t *pkt)
 		DV_AUDIO_FRM_SZ
 	);
 
+	// Descramble DV data (for fast data)
+	dv_scramble_data(
+		peer->rx_frame.ambe_data + seq * DV_AUDIO_FRM_SZ,
+		DV_AUDIO_FRM_SZ
+	);
+
 	if( seq == 0x00 )
 	{
 		// Sync 
@@ -101,6 +107,7 @@ int dextra_peer_parse_pkt( dextra_peer_t *peer, dv_stream_pkt_t *pkt)
 			s_frame = (unsigned char *) peer->dv_data_accumul + (2*DV_DATA_FRM_SZ)*s_frame_offset;
 			uint8_t s_type = s_frame[0] >> 4;
 			size_t  s_arg = s_frame[0] & 0x0F;
+			size_t  fastdata_block_sz = s_frame[0] - 0x81;
 
 			fprintf( stderr, "S-Frame type %x, arg %lu\n", s_type, s_arg);
 
@@ -115,6 +122,7 @@ int dextra_peer_parse_pkt( dextra_peer_t *peer, dv_stream_pkt_t *pkt)
 				);
 				peer->rx_frame.simple_data_bytes += s_arg;
 				break;
+
 			case 4:	// Message
 				if( s_arg > 3 ) break; // Invalid message sequence
 				memcpy(
@@ -122,6 +130,21 @@ int dextra_peer_parse_pkt( dextra_peer_t *peer, dv_stream_pkt_t *pkt)
 					s_frame+1,
 					5 	// Size of a Message chunk
 				);
+				break;
+			case 8:
+			case 9: // Fast data
+				if( s_frame_offset == 0 && fastdata_block_sz > 28 ) break;
+				if( s_frame_offset != 0 && fastdata_block_sz > 20 ) break;
+
+				// TODO: Copy data, needs a flush of slow data...
+				// memcpy ( , s_frame+1, 2);
+				// memcpy ( , s_frame+4, 2);
+				// memcpy ( , ambe_data + 9*(seq-1) + 0, 4);
+				// memcpy ( , ambe_data + 9*(seq-1) + 5, 4);
+				// memcpy ( , ambe_data + 9*(seq  ) + 0, 4);
+				// memcpy ( , ambe_data + 9*(seq  ) + 5, 4);
+				// memcpy ( , ambe_data + 9*(seq-2) + 0, 4);
+				// memcpy ( , ambe_data + 9*(seq-2) + 5, 4);
 				break;
 			default:
 				; // Drop Unsupported S-Frames
@@ -159,6 +182,10 @@ int dextra_peer_parse_pkt( dextra_peer_t *peer, dv_stream_pkt_t *pkt)
 		// TODO: Parse and send packet.
 		printf( "Message via %.7s%c: '%.20s'\n", peer->rpt1, peer->band, peer->rx_frame.message);
 		printf( "Simple data payload: %lu byte(s)\n", utstring_len(peer->reassembled_data));
+		fwrite( 
+			utstring_body(peer->reassembled_data),
+			utstring_len(peer->reassembled_data), 1, stdout
+		);
 		//parse( 
 		//	...,
 		//	utstring_body(peer->reassembled_data)),
