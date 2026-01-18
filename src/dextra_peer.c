@@ -135,6 +135,8 @@ int dextra_peer_parse_pkt( dextra_peer_t *peer, dv_stream_pkt_t *pkt)
 					peer->rx_frame.simple_data,
 					peer->rx_frame.simple_data_bytes
 				);
+
+				peer->rx_frame.simple_data_bytes = 0;
 			}
 		}
 	}
@@ -142,8 +144,21 @@ int dextra_peer_parse_pkt( dextra_peer_t *peer, dv_stream_pkt_t *pkt)
 
 	if( dv_last_frame( trunk_hdr) )
 	{
+		// Flush simple data buffer
+		if( peer->rx_frame.simple_data_bytes)
+		{
+			utstring_bincpy(
+				peer->reassembled_data,
+				peer->rx_frame.simple_data,
+				peer->rx_frame.simple_data_bytes
+			);
+
+			peer->rx_frame.simple_data_bytes = 0;
+		}
+
 		// TODO: Parse and send packet.
-		printf( "Message via %7s%c: '%20s'\n", peer->rpt1, peer->band, peer->rx_frame.message);
+		printf( "Message via %.7s%c: '%.20s'\n", peer->rpt1, peer->band, peer->rx_frame.message);
+		printf( "Simple data payload: %lu byte(s)\n", utstring_len(peer->reassembled_data));
 		//parse( 
 		//	...,
 		//	utstring_body(peer->reassembled_data)),
