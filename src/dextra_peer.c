@@ -5,6 +5,7 @@
 #include <sys/socket.h>
 #include <utstring.h>
 
+#include "common.h"
 #include "dextra_peer.h"
 #include "kiss.h"
 
@@ -68,16 +69,16 @@ int dextra_peer_parse_pkt( dextra_peer_t *peer, dv_stream_pkt_t *pkt)
 	if( trunk_hdr->mgmt_info & DV_TRUNK_HEALTH_FLAG ) return EPROTO; // Corrupted frame
 	if( seq > 20 ) return EPROTO; // Out of bounds sequence number
 
-	// FIXME: Improve unordered delivery management
+	// FIXME: Set up unordered delivery management
 	
-	// Accumulate AMBE data
+	// Accumulate Audio data
 	memcpy( 
 		peer->rx_frame.ambe_data + seq * DV_AUDIO_FRM_SZ,
 		pkt->audio_frame,
 		DV_AUDIO_FRM_SZ
 	);
 
-	// Descramble DV data (for fast data)
+	// Descramble Audio data (for fast data)
 	dv_scramble_data(
 		peer->rx_frame.ambe_data + seq * DV_AUDIO_FRM_SZ,
 		DV_AUDIO_FRM_SZ
@@ -99,16 +100,13 @@ int dextra_peer_parse_pkt( dextra_peer_t *peer, dv_stream_pkt_t *pkt)
 		memcpy( peer->dv_data_accumul + DV_DATA_FRM_SZ*(seq-1), pkt->data_frame, DV_DATA_FRM_SZ);
 		peer->dv_rx_mask |= seq_mask;
 
-		if( 
-			( (seq & 0x01) && (peer->dv_rx_mask & (seq_mask << 1)) ) ||
-			(!(seq & 0x01) && (peer->dv_rx_mask & (seq_mask >> 1)) )
-		)
+		if( !(seq & 0x01) )
 		{
 			// Process S-Frame
 			s_frame = (unsigned char *) peer->dv_data_accumul + (2*DV_DATA_FRM_SZ)*s_frame_offset;
 			uint8_t s_type = s_frame[0] >> 4;
 			size_t  s_arg = s_frame[0] & 0x0F;
-			size_t  fastdata_block_sz = s_frame[0] - 0x81;
+			size_t  fastdata_block_sz = s_frame[0] - 0x80;
 
 			fprintf( stderr, "S-Frame type %x, arg %lu\n", s_type, s_arg);
 
@@ -116,12 +114,7 @@ int dextra_peer_parse_pkt( dextra_peer_t *peer, dv_stream_pkt_t *pkt)
 			{
 			case 3:	// Simple Data
 				if( s_arg < 1 || s_arg > 5 ) break; // Inconsistent number of bytes
-				memcpy( 
-					peer->rx_frame.simple_data + peer->rx_frame.simple_data_bytes,
-					s_frame+1,
-					s_arg
-				);
-				peer->rx_frame.simple_data_bytes += s_arg;
+				utstring_bincpy( peer->reassembled_data, s_frame+1, s_arg);
 				break;
 
 			case 4:	// Message
@@ -136,33 +129,66 @@ int dextra_peer_parse_pkt( dextra_peer_t *peer, dv_stream_pkt_t *pkt)
 			case 9: // Fast data
 				if( s_frame_offset == 0 && fastdata_block_sz > 28 ) break;
 				if( s_frame_offset != 0 && fastdata_block_sz > 20 ) break;
+				int sz = (int) fastdata_block_sz;
 
-				peer->feat_flags |= DEXTRA_FEAT_FAST_DATA;
-				// TODO: Copy data, needs a flush of slow data...
-				// memcpy ( , s_frame+1, 2);
-				// memcpy ( , s_frame+4, 2);
-				// memcpy ( , ambe_data + 9*(seq-1) + 0, 4);
-				// memcpy ( , ambe_data + 9*(seq-1) + 5, 4);
-				// memcpy ( , ambe_data + 9*(seq  ) + 0, 4);
-				// memcpy ( , ambe_data + 9*(seq  ) + 5, 4);
-				// memcpy ( , ambe_data + 9*(seq-2) + 0, 4);
-				// memcpy ( , ambe_data + 9*(seq-2) + 5, 4);
-				break;
-			default:
-				; // Drop Unsupported S-Frames
-			}
+				// Skip miniheader
+				utstring_bincpy( peer->reassembled_data, s_frame+1, MIN( sz, 2));
+				sz -= MIN( sz, 2); if ( sz <= 0 ) break;
 
-			// FIXME: Improve unordered delivery
-			if( s_frame_offset == 9 )
-			{
-				// Last S-Frame of a sequence before rollover
+				// Skip guard byte
+				utstring_bincpy( peer->reassembled_data, s_frame+4, MIN( sz, 2));
+				sz -= MIN( sz, 2); if ( sz <= 0 ) break;
+
+				// First Audio frame
 				utstring_bincpy(
 					peer->reassembled_data,
-					peer->rx_frame.simple_data,
-					peer->rx_frame.simple_data_bytes
+					peer->rx_frame.ambe_data + (seq-1) * DV_AUDIO_FRM_SZ,
+					MIN( sz, 4)
 				);
+				sz -= MIN( sz, 4); if ( sz <= 0 ) break;
+				// Skip mitigation
+				utstring_bincpy(
+					peer->reassembled_data,
+					peer->rx_frame.ambe_data + (seq-1) * DV_AUDIO_FRM_SZ + 5,
+					MIN( sz, 4)
+				);
+				sz -= MIN( sz, 4); if ( sz <= 0 ) break;
 
-				peer->rx_frame.simple_data_bytes = 0;
+				// Second Audio frame
+				utstring_bincpy(
+					peer->reassembled_data,
+					peer->rx_frame.ambe_data +  seq * DV_AUDIO_FRM_SZ,
+					MIN( sz, 4)
+				);
+				sz -= MIN( sz, 4); if ( sz <= 0 ) break;
+				// Skip mitigation
+				utstring_bincpy(
+					peer->reassembled_data,
+					peer->rx_frame.ambe_data +  seq * DV_AUDIO_FRM_SZ + 5,
+					MIN( sz, 4)
+				);
+				sz -= MIN( sz, 4); if ( sz <= 0 ) break;
+
+				// Third Audio frame
+				utstring_bincpy(
+					peer->reassembled_data,
+					peer->rx_frame.ambe_data + (seq-2) * DV_AUDIO_FRM_SZ,
+					MIN( sz, 4)
+				);
+				sz -= MIN( sz, 4); if ( sz <= 0 ) break;
+				// Skip mitigation
+				utstring_bincpy(
+					peer->reassembled_data,
+					peer->rx_frame.ambe_data + (seq-2) * DV_AUDIO_FRM_SZ + 5,
+					MIN( sz, 4)
+				);
+				sz -= MIN( sz, 4); if ( sz <= 0 ) break;
+
+				peer->feat_flags |= DEXTRA_FEAT_FAST_DATA;
+				break;
+
+			default:
+				; // Drop Unsupported S-Frames
 			}
 		}
 	}
@@ -188,6 +214,7 @@ int dextra_peer_parse_pkt( dextra_peer_t *peer, dv_stream_pkt_t *pkt)
 			utstring_body(peer->reassembled_data),
 			utstring_len(peer->reassembled_data), 1, stdout
 		);
+		fflush(stdout);
 		//parse( 
 		//	...,
 		//	utstring_body(peer->reassembled_data)),
