@@ -129,6 +129,7 @@ int dextra_peer_parse_pkt( dextra_peer_t *peer, dv_stream_pkt_t *pkt)
 			case 9: // Fast data
 				if( s_frame_offset == 0 && fastdata_block_sz > 28 ) break;
 				if( s_frame_offset != 0 && fastdata_block_sz > 20 ) break;
+				peer->feat_flags |= DEXTRA_FEAT_FAST_DATA;
 				int sz = (int) fastdata_block_sz;
 
 				// Skip miniheader
@@ -184,7 +185,6 @@ int dextra_peer_parse_pkt( dextra_peer_t *peer, dv_stream_pkt_t *pkt)
 				);
 				sz -= MIN( sz, 4); if ( sz <= 0 ) break;
 
-				peer->feat_flags |= DEXTRA_FEAT_FAST_DATA;
 				break;
 
 			default:
