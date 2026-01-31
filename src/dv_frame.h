@@ -1,6 +1,8 @@
 #ifndef __DV_FRAME_H
 #define __DV_FRAME_H
 
+#include <sys/socket.h>
+
 #include <assert.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -81,5 +83,6 @@ _Static_assert( sizeof( dv_stream_pkt_t) == DV_STREAM_PKT_SZ, "struct dv_stream_
 int dv_radio_invalid_csum ( dv_radio_hdr_t *hdr);
 int dv_last_frame( dv_trunk_hdr_t *hdr);
 void dv_scramble_data( void *buffer, size_t len);
+void dv_insert_beep( int fd, struct sockaddr *addr, size_t addr_len);
 
 #endif	// __DV_FRAME_H
