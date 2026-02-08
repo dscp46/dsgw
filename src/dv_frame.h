@@ -25,6 +25,7 @@
 #define DV_DATA_FRM_SZ		 3
 
 // Bit masks
+#define DV_TRUNK_LAST_FRAME	0x40
 #define DV_TRUNK_HEALTH_FLAG	0x20
 #define DV_TRUNK_SEQ_MASK	0x1F
 
@@ -83,6 +84,7 @@ _Static_assert( sizeof( dv_stream_pkt_t) == DV_STREAM_PKT_SZ, "struct dv_stream_
 int dv_radio_invalid_csum ( dv_radio_hdr_t *hdr);
 int dv_last_frame( dv_trunk_hdr_t *hdr);
 void dv_scramble_data( void *buffer, size_t len);
-void dv_insert_beep( int fd, struct sockaddr *addr, size_t addr_len);
+void dv_insert_beep( int fd, struct sockaddr *addr, size_t addr_len, uint16_t stream_id, uint8_t *seq);
+void dv_insert_eot( int fd, struct sockaddr *addr, size_t addr_len, uint16_t stream_id, uint8_t *seq);
 
 #endif	// __DV_FRAME_H

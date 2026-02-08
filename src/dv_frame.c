@@ -4,6 +4,7 @@
 #include <endian.h>
 #include <stdio.h>
 #include <stdint.h>
+#include <string.h>
 #include <unistd.h>
 
 #include "crc_ccitt.h"
@@ -38,7 +39,7 @@ void dv_scramble_data( void *buffer, size_t len)
 	return;
 }
 
-void dv_insert_beep( int fd, struct sockaddr *addr, size_t addr_len)
+void dv_insert_beep( int fd, struct sockaddr *addr, size_t addr_len, uint16_t stream_id, uint8_t *seq)
 {
 	const uint8_t beep_frame[] = { 
 		0x44, 0x53, 0x56, 0x54, 0x20, 0x00, 0x00, 0x00,
@@ -61,18 +62,52 @@ void dv_insert_beep( int fd, struct sockaddr *addr, size_t addr_len)
 		0x16, 0x29, 0xf5
 	};
 
-	sendto( fd, beep_frame, 27, 0, addr, addr_len);
-	usleep( 20000);
-	sendto( fd, beep_frame, 27, 0, addr, addr_len);
-	usleep( 20000);
+	uint8_t buffer[DV_STREAM_PKT_SZ];
+	dv_stream_pkt_t *pkt = (dv_stream_pkt_t*) buffer;
+	dv_trunk_hdr_t  *hdr = (dv_trunk_hdr_t*)  pkt->trunk_hdr;
 
-	sendto( fd, sil1_frame, 27, 0, addr, addr_len);
-	usleep( 20000);
-	sendto( fd, sil2_frame, 27, 0, addr, addr_len);
-	usleep( 20000);
+	for( int i=0; i<6; ++i)
+	{
+		switch(i)
+		{
+		case 2:
+			memcpy( buffer, sil1_frame, DV_STREAM_PKT_SZ);
+			break;
+		case 3:
+			memcpy( buffer, sil2_frame, DV_STREAM_PKT_SZ);
+			break;
+		default:
+			memcpy( buffer, beep_frame, DV_STREAM_PKT_SZ);
+		}
 
-	sendto( fd, beep_frame, 27, 0, addr, addr_len);
-	usleep( 20000);
-	sendto( fd, beep_frame, 27, 0, addr, addr_len);
-	usleep( 20000);
+		if( *seq == 0)
+			memcpy( pkt->data_frame, "\x55\x2D\x16", 3);
+
+		hdr->call_id = htons(stream_id);
+		hdr->mgmt_info = ((*seq)++ & DV_TRUNK_SEQ_MASK);
+		*seq %= 21;
+
+		sendto( fd, buffer, DV_STREAM_PKT_SZ, 0, addr, addr_len);
+		usleep( 20000);
+	}
+}
+
+void dv_insert_eot( int fd, struct sockaddr *addr, size_t addr_len, uint16_t stream_id, uint8_t *seq)
+{
+	const uint8_t eot_frame[] = {
+		0x44, 0x53, 0x56, 0x54, 0x20, 0x00, 0x00, 0x00,
+		0x20, 0x00, 0x02, 0x01, 0xad, 0x3e, 0x4a, 0x55,
+		0x55, 0x55, 0x55, 0xc8, 0x7a, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00
+	};
+
+	uint8_t buffer[DV_STREAM_PKT_SZ];
+	dv_stream_pkt_t *pkt = (dv_stream_pkt_t*) buffer;
+	dv_trunk_hdr_t  *hdr = (dv_trunk_hdr_t*)  pkt->trunk_hdr;
+
+	memcpy( buffer, eot_frame, DV_STREAM_PKT_SZ);
+	hdr->call_id = htons(stream_id);
+	hdr->mgmt_info = DV_TRUNK_LAST_FRAME | ((*seq)++ & DV_TRUNK_SEQ_MASK);
+
+	sendto( fd, buffer, DV_STREAM_PKT_SZ, 0, addr, addr_len);
 }
