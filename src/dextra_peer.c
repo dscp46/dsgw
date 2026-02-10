@@ -65,6 +65,13 @@ int dextra_peer_parse_pkt( dextra_peer_t *peer, dv_stream_pkt_t *pkt)
 	unsigned int s_frame_offset = ((seq+1)>>1)-1;
 	unsigned char *s_frame = NULL;
 
+	// The DV Data loss frame is stored as descrambled, since it's how we're storing data.
+	// In the standard, the unscrambled version is 9E8D3288261A3F61E8 E78476
+	const uint8_t dv_lost_frame[] = {
+		0xEE, 0xC2, 0xA1, 0xC8, 0x42, 0x6E, 0x52, 0x51, 0xC3,
+		0x97, 0xCB, 0xE5
+	};
+
 	if( peer->rx_frame.stream_id != sid) return EPROTO; // SID mismatch
 	if( trunk_hdr->mgmt_info & DV_TRUNK_HEALTH_FLAG ) return EPROTO; // Corrupted frame
 	if( seq > 20 ) return EPROTO; // Out of bounds sequence number
@@ -108,6 +115,9 @@ int dextra_peer_parse_pkt( dextra_peer_t *peer, dv_stream_pkt_t *pkt)
 			size_t  s_arg = s_frame[0] & 0x0F;
 			size_t  fastdata_block_sz = s_frame[0] - 0x80;
 
+			// Frame loss detection in the second half of a S-Data frame.
+			if( memcmp( s_frame+3, dv_lost_frame+9, 3) == 0 && memcmp( peer->rx_frame.ambe_data + (seq  ) * DV_AUDIO_FRM_SZ, dv_lost_frame, 9) == 0 ) return EBADMSG;
+
 			fprintf( stderr, "S-Frame type %x, arg %lu\n", s_type, s_arg);
 
 			switch( s_type )
@@ -129,6 +139,9 @@ int dextra_peer_parse_pkt( dextra_peer_t *peer, dv_stream_pkt_t *pkt)
 			case 9: // Fast data
 				if( s_frame_offset == 0 && fastdata_block_sz > 28 ) break;
 				if( s_frame_offset != 0 && fastdata_block_sz > 20 ) break;
+				// Frame Loss detection in the first half of a S-Data frame.
+				if( memcmp( s_frame, dv_lost_frame+9, 3) == 0 && memcmp( peer->rx_frame.ambe_data + (seq-1) * DV_AUDIO_FRM_SZ, dv_lost_frame, 9) == 0 ) return EBADMSG;
+
 				peer->feat_flags |= DEXTRA_FEAT_FAST_DATA;
 				int sz = (int) fastdata_block_sz;
 
