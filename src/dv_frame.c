@@ -39,6 +39,25 @@ void dv_scramble_data( void *buffer, size_t len)
 	return;
 }
 
+void dv_send_frame( int fd, struct sockaddr *addr, size_t addr_len, void *buf, size_t len, int fast, char *src_callsign, char *mesg)
+{
+	if( addr == NULL || buf == NULL) return;
+	const uint8_t superframe_sync_pattern[] = { 0x55, 0x2D, 0x16};
+	const uint8_t slow_data_silence_a[] = { 0xce, 0x8e, 0x2e, 0x39, 0x66, 0x12, 0x78, 0x31, 0xb0 };
+	const uint8_t slow_data_silence_b[] = { 0xae, 0xcc, 0x2a, 0x78, 0xe1, 0x91, 0x34, 0x67, 0xc0 };
+	uint16_t stream_id = (uint16_t) (rand() & 0x0000FFFF); // random stream number
+	uint16_t dv_frame_ctr = 0; // Used for fast data beep intertion
+	uint8_t seq = 0; // Relative position in a superframe
+
+	// Send 6 times a traffic header
+
+	while( len > 0 )
+	{
+		
+	}
+
+}
+
 void dv_insert_beep( int fd, struct sockaddr *addr, size_t addr_len, uint16_t stream_id, uint8_t *seq)
 {
 	const uint8_t beep_frame[] = { 
