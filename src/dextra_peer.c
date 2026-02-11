@@ -139,8 +139,9 @@ int dextra_peer_parse_pkt( dextra_peer_t *peer, dv_stream_pkt_t *pkt)
 			case 9: // Fast data
 				if( s_frame_offset == 0 && fastdata_block_sz > 28 ) break;
 				if( s_frame_offset != 0 && fastdata_block_sz > 20 ) break;
-				// Frame Loss detection in the first half of a S-Data frame.
-				if( memcmp( s_frame, dv_lost_frame+9, 3) == 0 && memcmp( peer->rx_frame.ambe_data + (seq-1) * DV_AUDIO_FRM_SZ, dv_lost_frame, 9) == 0 ) return EBADMSG;
+				// Checking the mitigation value is more robust than simply looking for the Frame Loss pattern.
+				if( (*(peer->rx_frame.ambe_data + (seq-1) * DV_AUDIO_FRM_SZ +4) & 0xFD) != 0 ) return EBADMSG;
+				if( (*(peer->rx_frame.ambe_data + (seq  ) * DV_AUDIO_FRM_SZ +4) & 0xFD) != 0 ) return EBADMSG;
 
 				peer->feat_flags |= DEXTRA_FEAT_FAST_DATA;
 				int sz = (int) fastdata_block_sz;
