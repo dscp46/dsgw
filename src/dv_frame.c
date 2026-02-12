@@ -99,6 +99,46 @@ void dv_send_frame( int fd, struct sockaddr *addr, size_t addr_len, void *buf, s
 			frames[(2*DV_AUDIO_FRM_SZ) + DV_DATA_FRM_SZ] = 0x83;
 
 			// Insert data
+			do
+			{
+				memcpy( frames+DV_AUDIO_FRM_SZ+1, data, MIN( payload_sz, DV_DATA_FRM_SZ-1));
+				payload_sz -= MIN( payload_sz, DV_DATA_FRM_SZ-1);
+				if( payload_sz == 0) break;
+
+				memcpy( frames+(DV_AUDIO_FRM_SZ*2)+ DV_DATA_FRM_SZ   +1, data, MIN( payload_sz, DV_DATA_FRM_SZ-1));
+				payload_sz -= MIN( payload_sz, DV_DATA_FRM_SZ-1);
+				if( payload_sz == 0) break;
+
+				// Fill Audio frame
+				memcpy( frames+ DV_AUDIO_FRM_SZ   + DV_DATA_FRM_SZ     , data, MIN( payload_sz, 4));
+				payload_sz -= MIN( payload_sz, 4);
+				if( payload_sz == 0) break;
+
+				memcpy( frames+ DV_AUDIO_FRM_SZ   +DV_DATA_FRM_SZ   +5, data, MIN( payload_sz, 4));
+				payload_sz -= MIN( payload_sz, 4);
+				if( payload_sz == 0) break;
+
+				// Fill Audio frame
+				memcpy( frames+(DV_AUDIO_FRM_SZ   +DV_DATA_FRM_SZ)*2  , data, MIN( payload_sz, 4));
+				payload_sz -= MIN( payload_sz, 4);
+				if( payload_sz == 0) break;
+
+				memcpy( frames+(DV_AUDIO_FRM_SZ   +DV_DATA_FRM_SZ)*2+5, data, MIN( payload_sz, 4));
+				payload_sz -= MIN( payload_sz, 4);
+				if( payload_sz == 0) break;
+
+				// Fill last frame
+				memcpy( frames                                        , data, MIN( payload_sz, 4));
+				payload_sz -= MIN( payload_sz, 4);
+				if( payload_sz == 0) break;
+
+				memcpy( frames                                      +5, data, MIN( payload_sz, 4));
+				payload_sz -= MIN( payload_sz, 4);
+
+			} while( 0) ;
+
+			// Set the miniheader
+			frames[DV_AUDIO_FRM_SZ] = MIN( len, segment_sz) | 0x80;
 
 			// Scramble data
 			dv_scramble_data( frames                                       , DV_AUDIO_FRM_SZ);
