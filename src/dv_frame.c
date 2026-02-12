@@ -8,6 +8,7 @@
 #include <string.h>
 #include <unistd.h>
 
+#include "common.h"
 #include "crc_ccitt.h"
 
 int dv_radio_invalid_csum ( dv_radio_hdr_t *hdr)
@@ -44,12 +45,14 @@ void dv_send_frame( int fd, struct sockaddr *addr, size_t addr_len, void *buf, s
 {
 	if( addr == NULL || buf == NULL) return;
 	const uint8_t superframe_sync_pattern[] = { 0x55, 0x2D, 0x16};
-	const uint8_t slow_data_silence_a[] = { 0xce, 0x8e, 0x2e, 0x39, 0x66, 0x12, 0x78, 0x31, 0xb0 };
-	const uint8_t slow_data_silence_b[] = { 0xae, 0xcc, 0x2a, 0x78, 0xe1, 0x91, 0x34, 0x67, 0xc0 };
+	const uint8_t comfort_noise_a[] = { 0xce, 0x8e, 0x2e, 0x39, 0x66, 0x12, 0x78, 0x31, 0xb0 };
+	const uint8_t comfort_noise_b[] = { 0xae, 0xcc, 0x2a, 0x78, 0xe1, 0x91, 0x34, 0x67, 0xc0 };
 	uint16_t stream_id = (uint16_t) (rand() & 0x0000FFFF); // random stream number
 	uint16_t dv_frame_ctr = 0; // Used to time fast data beep insertion
 	uint8_t seq = 0; // Relative position in a superframe
-	uint8_t buffer[DV_STREAM_HDR_SZ];
+	uint8_t segment_sz;
+	uint8_t payload_sz, buffer[DV_STREAM_HDR_SZ], frames[(DV_AUDIO_FRM_SZ+DV_DATA_FRM_SZ)*3];
+	uint8_t *data = (uint8_t*)buf;
 
 	// Find source addr in AX.25 packet
 
@@ -64,6 +67,12 @@ void dv_send_frame( int fd, struct sockaddr *addr, size_t addr_len, void *buf, s
 	if( !fast || mesg != NULL )
 	{
 		// Send first frame with the superframe sync pattern
+		hdr->mgmt_info = seq & DV_TRUNK_SEQ_MASK;
+		memcpy( pkt->audio_frame, comfort_noise_a, DV_AUDIO_FRM_SZ);
+		memcpy( pkt->data_frame , superframe_sync_pattern, DV_DATA_FRM_SZ);
+
+		sendto( fd, buffer, DV_STREAM_PKT_SZ, 0, addr, addr_len);
+		usleep( 20000);
 	}
 
 	if( mesg != NULL )
@@ -73,14 +82,67 @@ void dv_send_frame( int fd, struct sockaddr *addr, size_t addr_len, void *buf, s
 
 	while( len > 0 )
 	{
-		hdr->mgmt_info = seq & DV_TRUNK_SEQ_MASK;
+		memset( frames, 0x66, (DV_AUDIO_FRM_SZ+DV_DATA_FRM_SZ)*3);
+		memcpy( frames+(DV_AUDIO_FRM_SZ*3)+(DV_DATA_FRM_SZ*2), superframe_sync_pattern, DV_DATA_FRM_SZ);
+
 		if( fast)
 		{
+
 		}
 		else
 		{
+			segment_sz = DV_DATA_FRM_SZ*2 - 1;
+			payload_sz = MIN( len, segment_sz);
+
+			// Pad the AMBE payload with our comfort noise AMBE data
+			memcpy( frames                                   , comfort_noise_b, DV_AUDIO_FRM_SZ);
+			memcpy( frames+DV_AUDIO_FRM_SZ+DV_DATA_FRM_SZ    , comfort_noise_a, DV_AUDIO_FRM_SZ);
+			memcpy( frames+(DV_AUDIO_FRM_SZ+DV_DATA_FRM_SZ)*2, comfort_noise_a, DV_AUDIO_FRM_SZ);
+
+			// Set the payload
+			memcpy( frames+DV_AUDIO_FRM_SZ+1, data, MIN( payload_sz, DV_DATA_FRM_SZ-1));
+			payload_sz -= MIN( payload_sz, DV_DATA_FRM_SZ-1);
+
+			// Set the second payload, if applicable
+			if( payload_sz > 0 )
+				memcpy( frames+(DV_AUDIO_FRM_SZ*2)+DV_DATA_FRM_SZ, data, payload_sz);
+
+			// Set Miniheader
+			frames[DV_AUDIO_FRM_SZ] = MIN( len, segment_sz) | 0x30;
+
+			// Decrement the amounts of bytes to send
+			len -= MIN( len, segment_sz);
+
+			// Scramble data
+			dv_scramble_data( frames+ DV_AUDIO_FRM_SZ                  , DV_DATA_FRM_SZ);
+			dv_scramble_data( frames+(DV_AUDIO_FRM_SZ*2)+DV_DATA_FRM_SZ, DV_DATA_FRM_SZ);
 		}
 
+		// Sync header
+		if( seq == 0 )
+		{
+			memcpy( pkt->audio_frame, frames+(DV_AUDIO_FRM_SZ+DV_DATA_FRM_SZ)*2, DV_AUDIO_FRM_SZ+DV_DATA_FRM_SZ);
+			hdr->mgmt_info = seq & DV_TRUNK_SEQ_MASK;
+
+			sendto( fd, buffer, DV_STREAM_PKT_SZ, 0, addr, addr_len);
+			usleep( 20000);
+			++seq;
+		}
+
+		// Send even frame
+		memcpy( pkt->audio_frame, frames, DV_AUDIO_FRM_SZ+DV_DATA_FRM_SZ);
+		hdr->mgmt_info = seq & DV_TRUNK_SEQ_MASK;
+
+		sendto( fd, buffer, DV_STREAM_PKT_SZ, 0, addr, addr_len);
+		usleep( 20000);
+		++seq; seq %= 21;
+
+		// Send odd frame
+		memcpy( pkt->audio_frame, frames, DV_AUDIO_FRM_SZ+DV_DATA_FRM_SZ);
+		hdr->mgmt_info = seq & DV_TRUNK_SEQ_MASK;
+
+		sendto( fd, buffer, DV_STREAM_PKT_SZ, 0, addr, addr_len);
+		usleep( 20000);
 		++seq; seq %= 21;
 	}
 
