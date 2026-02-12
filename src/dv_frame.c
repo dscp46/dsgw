@@ -82,6 +82,9 @@ void dv_send_frame( int fd, struct sockaddr *addr, size_t addr_len, void *buf, s
 
 	while( len > 0 )
 	{
+		// Initialize the frame buffer, which contains 3 pairs of DV audio and data frames.
+		// The order is [ even audio ][ even data ][ odd audio ][ odd data ][ sync audio ][ sync pattern ]
+		// Frame parity is considered as described in the graphs in section 7.2, which is **the opposite** to `seq`'s parity
 		memset( frames, 0x66, (DV_AUDIO_FRM_SZ+DV_DATA_FRM_SZ)*3);
 		memcpy( frames+(DV_AUDIO_FRM_SZ*3)+(DV_DATA_FRM_SZ*2), superframe_sync_pattern, DV_DATA_FRM_SZ);
 
@@ -101,38 +104,40 @@ void dv_send_frame( int fd, struct sockaddr *addr, size_t addr_len, void *buf, s
 			// Insert data
 			do
 			{
-				memcpy( frames+DV_AUDIO_FRM_SZ+1, data, MIN( payload_sz, DV_DATA_FRM_SZ-1));
+				// Fill first data frame
+				memcpy( frames+ DV_AUDIO_FRM_SZ                      +1, data, MIN( payload_sz, DV_DATA_FRM_SZ-1));
 				payload_sz -= MIN( payload_sz, DV_DATA_FRM_SZ-1);
 				if( payload_sz == 0) break;
 
+				// Fill second data frame, minus the guard byte
 				memcpy( frames+(DV_AUDIO_FRM_SZ*2)+ DV_DATA_FRM_SZ   +1, data, MIN( payload_sz, DV_DATA_FRM_SZ-1));
 				payload_sz -= MIN( payload_sz, DV_DATA_FRM_SZ-1);
 				if( payload_sz == 0) break;
 
-				// Fill Audio frame
-				memcpy( frames+ DV_AUDIO_FRM_SZ   + DV_DATA_FRM_SZ     , data, MIN( payload_sz, 4));
+				// Fill first audio frame
+				memcpy( frames                                         , data, MIN( payload_sz, 4));
 				payload_sz -= MIN( payload_sz, 4);
 				if( payload_sz == 0) break;
 
-				memcpy( frames+ DV_AUDIO_FRM_SZ   +DV_DATA_FRM_SZ   +5, data, MIN( payload_sz, 4));
+				memcpy( frames                                       +5, data, MIN( payload_sz, 4));
 				payload_sz -= MIN( payload_sz, 4);
 				if( payload_sz == 0) break;
 
-				// Fill Audio frame
-				memcpy( frames+(DV_AUDIO_FRM_SZ   +DV_DATA_FRM_SZ)*2  , data, MIN( payload_sz, 4));
+				// Fill second audio frame
+				memcpy( frames+(DV_AUDIO_FRM_SZ   + DV_DATA_FRM_SZ)    , data, MIN( payload_sz, 4));
 				payload_sz -= MIN( payload_sz, 4);
 				if( payload_sz == 0) break;
 
-				memcpy( frames+(DV_AUDIO_FRM_SZ   +DV_DATA_FRM_SZ)*2+5, data, MIN( payload_sz, 4));
+				memcpy( frames+(DV_AUDIO_FRM_SZ   + DV_DATA_FRM_SZ)  +5, data, MIN( payload_sz, 4));
 				payload_sz -= MIN( payload_sz, 4);
 				if( payload_sz == 0) break;
 
-				// Fill last frame
-				memcpy( frames                                        , data, MIN( payload_sz, 4));
+				// Fill the zeroth frame (only used at the beginning of a superframe)
+				memcpy( frames+(DV_AUDIO_FRM_SZ   + DV_DATA_FRM_SZ)*2  , data, MIN( payload_sz, 4));
 				payload_sz -= MIN( payload_sz, 4);
 				if( payload_sz == 0) break;
 
-				memcpy( frames                                      +5, data, MIN( payload_sz, 4));
+				memcpy( frames+(DV_AUDIO_FRM_SZ   + DV_DATA_FRM_SZ)*2+5, data, MIN( payload_sz, 4));
 				payload_sz -= MIN( payload_sz, 4);
 
 			} while( 0) ;
@@ -198,14 +203,19 @@ void dv_send_frame( int fd, struct sockaddr *addr, size_t addr_len, void *buf, s
 		++seq; seq %= 21;
 
 		// Send odd frame
-		memcpy( pkt->audio_frame, frames, DV_AUDIO_FRM_SZ+DV_DATA_FRM_SZ);
+		memcpy( pkt->audio_frame, frames+(DV_AUDIO_FRM_SZ+DV_DATA_FRM_SZ), DV_AUDIO_FRM_SZ+DV_DATA_FRM_SZ);
 		hdr->mgmt_info = seq & DV_TRUNK_SEQ_MASK;
 
 		sendto( fd, buffer, DV_STREAM_PKT_SZ, 0, addr, addr_len);
 		usleep( 20000);
 		++seq; seq %= 21;
 
-		// TODO: Insert fast data beep
+		// Insert fast data beep
+		if( dv_frame_ctr >= 44 )
+		{
+			dv_insert_beep( fd, addr, addr_len, stream_id, &seq);
+			dv_frame_ctr = 0;
+		}
 	}
 
 	dv_insert_eot( fd, addr, addr_len, stream_id, &seq);
