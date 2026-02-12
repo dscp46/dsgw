@@ -87,7 +87,27 @@ void dv_send_frame( int fd, struct sockaddr *addr, size_t addr_len, void *buf, s
 
 		if( fast)
 		{
+			segment_sz = (seq == 0) ? 28 : 20;
+			payload_sz = MIN( len, segment_sz);
 
+			// Set mitigation bytes
+			frames[                                   4] = 0x02;
+			frames[(DV_AUDIO_FRM_SZ+DV_DATA_FRM_SZ)  +4] = 0x02;
+			frames[(DV_AUDIO_FRM_SZ+DV_DATA_FRM_SZ)*2+4] = 0x02;
+
+			// Set the guard byte
+			frames[(2*DV_AUDIO_FRM_SZ) + DV_DATA_FRM_SZ] = 0x83;
+
+			// Insert data
+
+			// Scramble data
+			dv_scramble_data( frames                                       , DV_AUDIO_FRM_SZ);
+			dv_scramble_data( frames+ DV_AUDIO_FRM_SZ                      , DV_DATA_FRM_SZ);
+			dv_scramble_data( frames+ DV_AUDIO_FRM_SZ   + DV_DATA_FRM_SZ   , DV_AUDIO_FRM_SZ);
+			dv_scramble_data( frames+(DV_AUDIO_FRM_SZ*2)+ DV_DATA_FRM_SZ   , DV_DATA_FRM_SZ);
+			dv_scramble_data( frames+(DV_AUDIO_FRM_SZ*2)+(DV_DATA_FRM_SZ*2), DV_AUDIO_FRM_SZ);
+
+			dv_frame_ctr += 2;
 		}
 		else
 		{
@@ -144,6 +164,8 @@ void dv_send_frame( int fd, struct sockaddr *addr, size_t addr_len, void *buf, s
 		sendto( fd, buffer, DV_STREAM_PKT_SZ, 0, addr, addr_len);
 		usleep( 20000);
 		++seq; seq %= 21;
+
+		// TODO: Insert fast data beep
 	}
 
 	dv_insert_eot( fd, addr, addr_len, stream_id, &seq);
