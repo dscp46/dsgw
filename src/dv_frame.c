@@ -4,6 +4,7 @@
 #include <endian.h>
 #include <stdio.h>
 #include <stdint.h>
+#include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 
@@ -46,16 +47,44 @@ void dv_send_frame( int fd, struct sockaddr *addr, size_t addr_len, void *buf, s
 	const uint8_t slow_data_silence_a[] = { 0xce, 0x8e, 0x2e, 0x39, 0x66, 0x12, 0x78, 0x31, 0xb0 };
 	const uint8_t slow_data_silence_b[] = { 0xae, 0xcc, 0x2a, 0x78, 0xe1, 0x91, 0x34, 0x67, 0xc0 };
 	uint16_t stream_id = (uint16_t) (rand() & 0x0000FFFF); // random stream number
-	uint16_t dv_frame_ctr = 0; // Used for fast data beep intertion
+	uint16_t dv_frame_ctr = 0; // Used to time fast data beep insertion
 	uint8_t seq = 0; // Relative position in a superframe
+	uint8_t buffer[DV_STREAM_HDR_SZ];
 
-	// Send 6 times a traffic header
+	// Find source addr in AX.25 packet
+
+	// Send 6 times the traffic header
+
+	// Initialize the DSVT packet
+	memcpy( buffer, "DSVT \0\0\0 \0\x02\x01", 12);
+	dv_stream_pkt_t *pkt = (dv_stream_pkt_t*) buffer;
+	dv_trunk_hdr_t  *hdr = (dv_trunk_hdr_t*)  pkt->trunk_hdr;
+	hdr->call_id = htons(stream_id);
+
+	if( !fast || mesg != NULL )
+	{
+		// Send first frame with the superframe sync pattern
+	}
+
+	if( mesg != NULL )
+	{
+		// Send TX message
+	}
 
 	while( len > 0 )
 	{
-		
+		hdr->mgmt_info = seq & DV_TRUNK_SEQ_MASK;
+		if( fast)
+		{
+		}
+		else
+		{
+		}
+
+		++seq; seq %= 21;
 	}
 
+	dv_insert_eot( fd, addr, addr_len, stream_id, &seq);
 }
 
 void dv_insert_beep( int fd, struct sockaddr *addr, size_t addr_len, uint16_t stream_id, uint8_t *seq)
@@ -103,8 +132,8 @@ void dv_insert_beep( int fd, struct sockaddr *addr, size_t addr_len, uint16_t st
 			memcpy( pkt->data_frame, "\x55\x2D\x16", 3);
 
 		hdr->call_id = htons(stream_id);
-		hdr->mgmt_info = ((*seq)++ & DV_TRUNK_SEQ_MASK);
-		*seq %= 21;
+		++(*seq); *seq %= 21;
+		hdr->mgmt_info = (*seq & DV_TRUNK_SEQ_MASK);
 
 		sendto( fd, buffer, DV_STREAM_PKT_SZ, 0, addr, addr_len);
 		usleep( 20000);
