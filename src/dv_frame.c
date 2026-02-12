@@ -85,6 +85,7 @@ void dv_send_frame( int fd, struct sockaddr *addr, size_t addr_len, void *buf, s
 		// Initialize the frame buffer, which contains 3 pairs of DV audio and data frames.
 		// The order is [ even audio ][ even data ][ odd audio ][ odd data ][ sync audio ][ sync pattern ]
 		// Frame parity is considered as described in the graphs in section 7.2, which is **the opposite** to `seq`'s parity
+		// Initialization value is set to 0x66, as specified in section 6.1.3
 		memset( frames, 0x66, (DV_AUDIO_FRM_SZ+DV_DATA_FRM_SZ)*3);
 		memcpy( frames+(DV_AUDIO_FRM_SZ*3)+(DV_DATA_FRM_SZ*2), superframe_sync_pattern, DV_DATA_FRM_SZ);
 
