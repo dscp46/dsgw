@@ -29,6 +29,16 @@
 #define DV_TRUNK_HEALTH_FLAG	0x20
 #define DV_TRUNK_SEQ_MASK	0x1F
 
+// Magic values
+#define DV_MINIHDR_SLOW_DATA	0x30
+#define DV_MINIHDR_MESSAGE	0x40
+#define DV_MINIHDR_HDR_RETX	0x50
+#define DV_MINIHDR_FAST_DATA	0x80
+#define DV_MINIHDR_CSQL		0xC2
+
+#define DV_GUARD		0x83
+#define DV_MITIGATION		0x02
+
 typedef struct dv_frame {
 	uint16_t        stream_id;
 	unsigned char   ambe_data[ DSVT_AMBE_SZ];

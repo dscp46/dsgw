@@ -54,8 +54,6 @@ void dv_send_frame( int fd, struct sockaddr *addr, size_t addr_len, void *buf, s
 	uint8_t payload_sz, buffer[DV_STREAM_HDR_SZ], frames[(DV_AUDIO_FRM_SZ+DV_DATA_FRM_SZ)*3];
 	uint8_t *data = (uint8_t*)buf;
 
-	// Find source addr in AX.25 packet
-
 	// Send 6 times the traffic header
 
 	// Initialize the DSVT packet
@@ -64,20 +62,38 @@ void dv_send_frame( int fd, struct sockaddr *addr, size_t addr_len, void *buf, s
 	dv_trunk_hdr_t  *hdr = (dv_trunk_hdr_t*)  pkt->trunk_hdr;
 	hdr->call_id = htons(stream_id);
 
-	if( !fast || mesg != NULL )
+	if( mesg != NULL )
 	{
 		// Send first frame with the superframe sync pattern
-		hdr->mgmt_info = seq & DV_TRUNK_SEQ_MASK;
+		hdr->mgmt_info = seq++ & DV_TRUNK_SEQ_MASK;
 		memcpy( pkt->audio_frame, comfort_noise_a, DV_AUDIO_FRM_SZ);
 		memcpy( pkt->data_frame , superframe_sync_pattern, DV_DATA_FRM_SZ);
 
 		sendto( fd, buffer, DV_STREAM_PKT_SZ, 0, addr, addr_len);
 		usleep( 20000);
-	}
 
-	if( mesg != NULL )
-	{
 		// Send TX message
+		for( i=0; i<4; ++i)
+		{
+			// First half of the S-Data frame
+			memcpy( pkt->audio_frame, comfort_noise_b, DV_AUDIO_FRM_SZ);
+			hdr->mgmt_info = seq++ & DV_TRUNK_SEQ_MASK;
+			pkt->data_frame[0] = i | DV_MINIHDR_MESSAGE;
+			memcpy( pkt->data_frame+1, mesg+(i*5), DV_DATA_FRM_SZ-1);
+			dv_scramble_data( pkt->data_frame, DV_DATA_FRM_SZ);
+
+			sendto( fd, buffer, DV_STREAM_PKT_SZ, 0, addr, addr_len);
+			usleep( 20000);
+
+			// Second half of the S-Data frame
+			memcpy( pkt->audio_frame, comfort_noise_a, DV_AUDIO_FRM_SZ);
+			hdr->mgmt_info = seq++ & DV_TRUNK_SEQ_MASK;
+			memcpy( pkt->data_frame, mesg+(i*5)+2, DV_DATA_FRM_SZ);
+			dv_scramble_data( pkt->data_frame, DV_DATA_FRM_SZ);
+
+			sendto( fd, buffer, DV_STREAM_PKT_SZ, 0, addr, addr_len);
+			usleep( 20000);
+		}
 	}
 
 	while( len > 0 )
@@ -95,12 +111,12 @@ void dv_send_frame( int fd, struct sockaddr *addr, size_t addr_len, void *buf, s
 			payload_sz = MIN( len, segment_sz);
 
 			// Set mitigation bytes
-			frames[                                   4] = 0x02;
-			frames[(DV_AUDIO_FRM_SZ+DV_DATA_FRM_SZ)  +4] = 0x02;
-			frames[(DV_AUDIO_FRM_SZ+DV_DATA_FRM_SZ)*2+4] = 0x02;
+			frames[                                   4] = DV_MITIGATION;
+			frames[(DV_AUDIO_FRM_SZ+DV_DATA_FRM_SZ)  +4] = DV_MITIGATION;
+			frames[(DV_AUDIO_FRM_SZ+DV_DATA_FRM_SZ)*2+4] = DV_MITIGATION;
 
 			// Set the guard byte
-			frames[(2*DV_AUDIO_FRM_SZ) + DV_DATA_FRM_SZ] = 0x83;
+			frames[(2*DV_AUDIO_FRM_SZ) + DV_DATA_FRM_SZ] = DV_GUARD;
 
 			// Insert data
 			do
@@ -144,7 +160,7 @@ void dv_send_frame( int fd, struct sockaddr *addr, size_t addr_len, void *buf, s
 			} while( 0) ;
 
 			// Set the miniheader
-			frames[DV_AUDIO_FRM_SZ] = MIN( len, segment_sz) | 0x80;
+			frames[DV_AUDIO_FRM_SZ] = MIN( len, segment_sz) | DV_MINIHDR_FAST_DATA;
 
 			// Scramble data
 			dv_scramble_data( frames                                       , DV_AUDIO_FRM_SZ);
@@ -174,7 +190,7 @@ void dv_send_frame( int fd, struct sockaddr *addr, size_t addr_len, void *buf, s
 				memcpy( frames+(DV_AUDIO_FRM_SZ*2)+DV_DATA_FRM_SZ, data, payload_sz);
 
 			// Set Miniheader
-			frames[DV_AUDIO_FRM_SZ] = MIN( len, segment_sz) | 0x30;
+			frames[DV_AUDIO_FRM_SZ] = MIN( len, segment_sz) | DV_MINIHDR_SLOW_DATA;
 
 			// Decrement the amounts of bytes to send
 			len -= MIN( len, segment_sz);
@@ -267,11 +283,11 @@ void dv_insert_beep( int fd, struct sockaddr *addr, size_t addr_len, uint16_t st
 			memcpy( pkt->data_frame, "\x55\x2D\x16", 3);
 
 		hdr->call_id = htons(stream_id);
-		++(*seq); *seq %= 21;
 		hdr->mgmt_info = (*seq & DV_TRUNK_SEQ_MASK);
 
 		sendto( fd, buffer, DV_STREAM_PKT_SZ, 0, addr, addr_len);
 		usleep( 20000);
+		++(*seq); *seq %= 21;
 	}
 }
 
