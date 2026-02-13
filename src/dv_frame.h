@@ -25,11 +25,16 @@
 #define DV_DATA_FRM_SZ		 3
 
 // Bit masks
-#define DV_TRUNK_LAST_FRAME	0x40
-#define DV_TRUNK_HEALTH_FLAG	0x20
 #define DV_TRUNK_SEQ_MASK	0x1F
 
 // Magic values
+#define DV_TRUNK_HEADER		0x80
+#define DV_TRUNK_LAST_FRAME	0x40
+#define DV_TRUNK_HEALTH_FLAG	0x20
+
+#define DV_TRUNK_TYPE_DV_COMM	1
+#define DV_TRUNK_TYPE_DD_COMM	2
+
 #define DV_MINIHDR_SLOW_DATA	0x30
 #define DV_MINIHDR_MESSAGE	0x40
 #define DV_MINIHDR_HDR_RETX	0x50
@@ -38,6 +43,10 @@
 
 #define DV_GUARD		0x83
 #define DV_MITIGATION		0x02
+
+#define DSVT_HOLE_PUNCHING	0x0001
+#define DSVT_TYPE_WIRELESS_HDR	0x1000
+#define DSVT_TYPE_DATA_PKT	0x2000
 
 typedef struct dv_frame {
 	uint16_t        stream_id;

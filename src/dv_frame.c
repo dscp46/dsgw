@@ -41,7 +41,7 @@ void dv_scramble_data( void *buffer, size_t len)
 	return;
 }
 
-void dv_send_frame( int fd, struct sockaddr *addr, size_t addr_len, void *buf, size_t len, int fast, char *src_callsign, char *mesg)
+void dv_send_frame( int fd, struct sockaddr *addr, size_t addr_len, void *buf, size_t len, int fast, char *xrf_callsign, char *src_callsign, char *mesg)
 {
 	if( addr == NULL || buf == NULL) return;
 	const uint8_t superframe_sync_pattern[] = { 0x55, 0x2D, 0x16};
@@ -54,18 +54,47 @@ void dv_send_frame( int fd, struct sockaddr *addr, size_t addr_len, void *buf, s
 	uint8_t payload_sz, buffer[DV_STREAM_HDR_SZ], frames[(DV_AUDIO_FRM_SZ+DV_DATA_FRM_SZ)*3];
 	uint8_t *data = (uint8_t*)buf;
 
-	// Send 6 times the traffic header
-
 	// Initialize the DSVT packet
-	memcpy( buffer, "DSVT \0\0\0 \0\x02\x01", 12);
+	dv_stream_hdr_t *hdr_pkt = (dv_stream_hdr_t*) buffer;
+	dv_radio_hdr_t *radio_hdr = (dv_radio_hdr_t*) hdr_pkt->radio_hdr;
 	dv_stream_pkt_t *pkt = (dv_stream_pkt_t*) buffer;
-	dv_trunk_hdr_t  *hdr = (dv_trunk_hdr_t*)  pkt->trunk_hdr;
-	hdr->call_id = htons(stream_id);
+	dv_trunk_hdr_t  *trk_hdr = (dv_trunk_hdr_t*)  pkt->trunk_hdr; // Reusable for the header and voice packets, same offsets
+
+	// Initialize the packet headers
+	memcpy( hdr_pkt->signature, "DSVT", 4);
+	hdr_pkt->flag = htons( DSVT_TYPE_WIRELESS_HDR);
+	trk_hdr->type = DV_TRUNK_TYPE_DV_COMM;
+	trk_hdr->rsvd = 0;
+	trk_hdr->dst_rpt_id = 0;
+	trk_hdr->src_rpt_id = 2;
+	trk_hdr->src_term_id = 1;
+	trk_hdr->call_id = htons(stream_id);
+	trk_hdr->mgmt_info = DV_TRUNK_HEADER;
+
+	// Set the radio header
+	memcpy( radio_hdr->rpt1 , xrf_callsign, 8);
+	memcpy( radio_hdr->rpt2 , xrf_callsign, 7);
+	radio_hdr->rpt2[7] = 'G';
+	memcpy( radio_hdr->ur, "CQCQCQ  ", 8);
+	memcpy( radio_hdr->my , src_callsign, 8);
+	memcpy( radio_hdr->my+8 , "SGW ", 4);
+
+	// Compute radio header CRC
+	radio_hdr->p_fcs = htole16( crc_ccitt( (uint8_t*)radio_hdr, sizeof( dv_radio_hdr_t)-2));
+
+	// Send 5 times the stream header
+	for( int i=0; i<6; ++i)
+	{
+
+	}
+
+	// Reconfigure headers
+	hdr_pkt->flag = htons( DSVT_TYPE_DATA_PKT);
 
 	if( mesg != NULL )
 	{
 		// Send first frame with the superframe sync pattern
-		hdr->mgmt_info = seq++ & DV_TRUNK_SEQ_MASK;
+		trk_hdr->mgmt_info = seq++ & DV_TRUNK_SEQ_MASK;
 		memcpy( pkt->audio_frame, comfort_noise_a, DV_AUDIO_FRM_SZ);
 		memcpy( pkt->data_frame , superframe_sync_pattern, DV_DATA_FRM_SZ);
 
@@ -73,11 +102,11 @@ void dv_send_frame( int fd, struct sockaddr *addr, size_t addr_len, void *buf, s
 		usleep( 20000);
 
 		// Send TX message
-		for( i=0; i<4; ++i)
+		for( int i=0; i<4; ++i)
 		{
 			// First half of the S-Data frame
 			memcpy( pkt->audio_frame, comfort_noise_b, DV_AUDIO_FRM_SZ);
-			hdr->mgmt_info = seq++ & DV_TRUNK_SEQ_MASK;
+			trk_hdr->mgmt_info = seq++ & DV_TRUNK_SEQ_MASK;
 			pkt->data_frame[0] = i | DV_MINIHDR_MESSAGE;
 			memcpy( pkt->data_frame+1, mesg+(i*5), DV_DATA_FRM_SZ-1);
 			dv_scramble_data( pkt->data_frame, DV_DATA_FRM_SZ);
@@ -87,7 +116,7 @@ void dv_send_frame( int fd, struct sockaddr *addr, size_t addr_len, void *buf, s
 
 			// Second half of the S-Data frame
 			memcpy( pkt->audio_frame, comfort_noise_a, DV_AUDIO_FRM_SZ);
-			hdr->mgmt_info = seq++ & DV_TRUNK_SEQ_MASK;
+			trk_hdr->mgmt_info = seq++ & DV_TRUNK_SEQ_MASK;
 			memcpy( pkt->data_frame, mesg+(i*5)+2, DV_DATA_FRM_SZ);
 			dv_scramble_data( pkt->data_frame, DV_DATA_FRM_SZ);
 
@@ -204,7 +233,7 @@ void dv_send_frame( int fd, struct sockaddr *addr, size_t addr_len, void *buf, s
 		if( seq == 0 )
 		{
 			memcpy( pkt->audio_frame, frames+(DV_AUDIO_FRM_SZ+DV_DATA_FRM_SZ)*2, DV_AUDIO_FRM_SZ+DV_DATA_FRM_SZ);
-			hdr->mgmt_info = seq & DV_TRUNK_SEQ_MASK;
+			trk_hdr->mgmt_info = seq & DV_TRUNK_SEQ_MASK;
 
 			sendto( fd, buffer, DV_STREAM_PKT_SZ, 0, addr, addr_len);
 			usleep( 20000);
@@ -213,7 +242,7 @@ void dv_send_frame( int fd, struct sockaddr *addr, size_t addr_len, void *buf, s
 
 		// Send even frame
 		memcpy( pkt->audio_frame, frames, DV_AUDIO_FRM_SZ+DV_DATA_FRM_SZ);
-		hdr->mgmt_info = seq & DV_TRUNK_SEQ_MASK;
+		trk_hdr->mgmt_info = seq & DV_TRUNK_SEQ_MASK;
 
 		sendto( fd, buffer, DV_STREAM_PKT_SZ, 0, addr, addr_len);
 		usleep( 20000);
@@ -221,7 +250,7 @@ void dv_send_frame( int fd, struct sockaddr *addr, size_t addr_len, void *buf, s
 
 		// Send odd frame
 		memcpy( pkt->audio_frame, frames+(DV_AUDIO_FRM_SZ+DV_DATA_FRM_SZ), DV_AUDIO_FRM_SZ+DV_DATA_FRM_SZ);
-		hdr->mgmt_info = seq & DV_TRUNK_SEQ_MASK;
+		trk_hdr->mgmt_info = seq & DV_TRUNK_SEQ_MASK;
 
 		sendto( fd, buffer, DV_STREAM_PKT_SZ, 0, addr, addr_len);
 		usleep( 20000);
