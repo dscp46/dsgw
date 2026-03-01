@@ -24,7 +24,7 @@ flowchart LR
     tnc <-->|Serial| radio[Radio]
     radio <-..->|D-Star| rptr[Repeater]
     rptr <-->|DExtra| dsgw@{ shape: stadium, label: "S-GW"}
-    dsgw <--> |kiss|pse_s[PSE]
+    dsgw <--> |kiss|pse_s[Packet<br>Switching<br>Equipment]
     pse_s <-->|RMS2CMS OpenB2F| cms[/Winlink CMS/]
     pse_s <-->|telnet| wlpo[/Hamnet Winlink Post Office/]
     pse_s <-->|telnet| bbs[/BBS/]
