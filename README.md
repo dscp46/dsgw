@@ -27,7 +27,7 @@ flowchart LR
     dsgw <--> |kiss|pse_s[Packet<br>Switching<br>Equipment]
     pse_s <--> rmsgw[/RMS Gateway/]
     rmsgw <--> |OpenB2F| cms[/Winlink CMS/]
-    pse_s <-->|telnet| wlpo[/Hamnet Winlink Post Office/]
+    rmsgw <-->|OpenB2F| wlpo[/Hamnet Winlink Post Office/]
     pse_s <-->|telnet| bbs[/BBS/]
     pse_s <-->|telnet| dxc[/DXCluster/]
     pse_s <-->|APRS-IS| abk[/APRS Server/]
